@@ -1,24 +1,44 @@
 # @boomship/postgres-vector-embedded
+[![Build](https://github.com/boomship/postgres-vector-embedded/actions/workflows/build.yml/badge.svg)](https://github.com/boomship/postgres-vector-embedded/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![npm](https://img.shields.io/npm/v/@boomship/postgres-vector-embedded)](https://www.npmjs.com/package/@boomship/postgres-vector-embedded)
 
-⚠️ **Work in Progress** - Build system ready, binaries coming soon
+
+✅ **Ready to Use** - Cross-platform binaries now available via GitHub Releases
 
 Embedded PostgreSQL with pgvector extension for Node.js applications.
 
 ## Overview
 
-A complete embedded PostgreSQL + pgvector solution that includes:
+A complete embedded PostgreSQL + pgvector solution for Node.js applications:
 
-- **PostgreSQL 17.2** binaries with latest features
-- **pgvector 0.8.0** extension for vector similarity search
-- **Cross-platform support**: macOS (ARM64/x64), Linux (x64/ARM64), Windows (x64)
-- **Zero-config** embedded database setup
-- **TypeScript** support with full type definitions
+- **PostgreSQL 17.2** — full database engine included
+- **pgvector 0.8.0** — enables fast vector similarity search
+- **Cross-platform binaries** — macOS, Linux, Windows (x64 + ARM64)
+- **No manual setup** — everything is precompiled and ready to run
+- **TypeScript API** — spin up a local vector-ready database with one import
+
+Ideal for projects needing vector search *without* relying on external Postgres instances or Docker.
+
+> ⚠️ Note: The included TypeScript code is intended as **example usage only**. It is not production-ready and is provided to demonstrate how to use the embedded binaries. The real value of this package lies in its cross-platform PostgreSQL + pgvector binaries.
 
 ## Quick Start
 
 ```bash
 npm install @boomship/postgres-vector-embedded
 ```
+
+> This will install the package and prepare your environment for running an embedded Postgres server. All example code provided is for demonstration purposes only.
+
+## Platform Support
+
+| Platform | Architecture | Status |
+|----------|-------------|---------|
+| macOS    | ARM64 (M1+) | ✅ Supported |
+| macOS    | x64 (Intel) | ✅ Supported |
+| Linux    | x64         | ✅ Supported |
+| Windows  | x64         | ✅ Supported |
+| Linux    | ARM64       | ⏸️ Planned |
 
 ### Basic Usage
 
@@ -118,10 +138,11 @@ interface DownloadOptions {
   downloadDir?: string;       // Default: './postgres-binaries'
 }
 ```
+> Note: The first time you run this, platform-specific binaries will be downloaded and cached.
 
 ### `PostgresServer`
 
-Embedded PostgreSQL server management.
+An example of embedded PostgreSQL server management.
 
 ```typescript
 interface PostgresServerOptions {
@@ -141,30 +162,24 @@ interface PostgresServerOptions {
 - `async restart()` - Restart the server
 - `isRunning()` - Check if server is running
 
-## Platform Support
-
-| Platform | Architecture | Status |
-|----------|-------------|---------|
-| macOS    | ARM64 (M1+) | ✅ Supported |
-| macOS    | x64 (Intel) | ✅ Supported |
-| Linux    | x64         | ✅ Supported |
-| Windows  | x64         | ✅ Supported |
-| Linux    | ARM64       | ⏸️ Planned |
-
 ## Why This Package?
 
 Existing solutions are incomplete - they're either client libraries that require existing PostgreSQL installations, PostgreSQL-only packages without pgvector, or solutions with older versions.
 
 This package provides **the complete embedded solution** with latest versions of both PostgreSQL 17.2 and pgvector 0.8.0.
 
-## Contributing
 
-The build system is designed for easy contribution:
+## 🤝 Curated Release
 
-1. Fork and clone the repository
-2. Make changes to build system or TypeScript code
-3. Test locally with `make test`
-4. Submit PR - GitHub Actions will test all platforms
+This repository is published as a **curated release**. That means:
+
+- It’s open-source and freely usable under the terms of the license
+- It’s not a community-driven project — we’re not accepting PRs or feature requests
+- Issues may be disabled or ignored, depending on capacity
+- You’re encouraged to fork it if you want to extend or modify it
+
+> This is a stable, production-ready **binary release** from an internal system. The accompanying code is illustrative and may not be suitable for production use.
+
 
 ## License
 
