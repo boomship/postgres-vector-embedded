@@ -38,7 +38,7 @@ jobs:
       run: ${{ matrix.setup }}
 
     - name: Set up QEMU for ARM64
-      if: matrix.arch == 'arm64'
+      if: matrix.arch == 'arm64' && runner.os == 'Linux'
       uses: docker/setup-qemu-action@v3
       with:
         platforms: linux/arm64
