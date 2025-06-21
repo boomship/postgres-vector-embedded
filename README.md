@@ -148,7 +148,7 @@ interface PostgresServerOptions {
 | macOS    | ARM64 (M1+) | ✅ Supported |
 | macOS    | x64 (Intel) | ✅ Supported |
 | Linux    | x64         | ✅ Supported |
-| Linux    | ARM64       | ✅ Supported |
+| Linux    | ARM64       | 🚧 In Progress |
 | Windows  | x64         | 🚧 In Progress |
 
 ## Why This Package?
