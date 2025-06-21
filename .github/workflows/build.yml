@@ -27,7 +27,14 @@ jobs:
             setup: |
               sudo apt-get update
               sudo apt-get install -y gcc-aarch64-linux-gnu qemu-user-static binfmt-support
+              sudo dpkg --add-architecture arm64
+              sudo apt-get update
+              sudo apt-get install -y libc6:arm64
               sudo update-binfmts --enable qemu-aarch64
+              # Test QEMU setup
+              echo 'int main(){return 0;}' | aarch64-linux-gnu-gcc -x c - -o test_arm64
+              qemu-aarch64-static test_arm64
+              rm test_arm64
           - os: windows-latest
             platform: win32
             arch: x64
