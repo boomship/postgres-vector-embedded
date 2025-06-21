@@ -67,29 +67,35 @@ jobs:
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "Building version: $VERSION"
 
-    - name: Build PostgreSQL + pgvector
-      shell: bash
+    - name: Build PostgreSQL + pgvector (Windows)
+      if: runner.os == 'Windows'
+      shell: cmd
       run: |
-        export PLATFORM=${{ matrix.platform }}
-        export ARCH=${{ matrix.arch }}
-        if [[ "${{ runner.os }}" == "Windows" ]]; then
-          # Use MSYS2 environment for Windows builds
-          C:\tools\msys64\usr\bin\bash.exe -lc "cd /d/a/postgres-vector-embedded/postgres-vector-embedded && export PLATFORM=${{ matrix.platform }} && export ARCH=${{ matrix.arch }} && make build"
-        else
-          make build
-        fi
+        set PLATFORM=${{ matrix.platform }}
+        set ARCH=${{ matrix.arch }}
+        C:\tools\msys64\usr\bin\bash.exe -lc "cd /d/a/postgres-vector-embedded/postgres-vector-embedded && export PLATFORM=${{ matrix.platform }} && export ARCH=${{ matrix.arch }} && make build"
 
-    - name: Test binaries functionality
+    - name: Build PostgreSQL + pgvector (Unix)
+      if: runner.os != 'Windows'
       shell: bash
       run: |
         export PLATFORM=${{ matrix.platform }}
         export ARCH=${{ matrix.arch }}
-        if [[ "${{ runner.os }}" == "Windows" ]]; then
-          # Use MSYS2 environment for Windows tests
-          C:\tools\msys64\usr\bin\bash.exe -lc "cd /d/a/postgres-vector-embedded/postgres-vector-embedded && export PLATFORM=${{ matrix.platform }} && export ARCH=${{ matrix.arch }} && ./test-binaries.sh"
-        else
-          ./test-binaries.sh
-        fi
+        make build
+
+    - name: Test binaries functionality (Windows)
+      if: runner.os == 'Windows'
+      shell: cmd
+      run: |
+        C:\tools\msys64\usr\bin\bash.exe -lc "cd /d/a/postgres-vector-embedded/postgres-vector-embedded && export PLATFORM=${{ matrix.platform }} && export ARCH=${{ matrix.arch }} && ./test-binaries.sh"
+
+    - name: Test binaries functionality (Unix)
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |
+        export PLATFORM=${{ matrix.platform }}
+        export ARCH=${{ matrix.arch }}
+        ./test-binaries.sh
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
