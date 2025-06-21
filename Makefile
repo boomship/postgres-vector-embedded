@@ -47,11 +47,12 @@ PREFIX = $(CURDIR)/$(INSTALL_DIR)
 ifeq ($(PLATFORM),darwin)
     BREW_PREFIX := $(shell brew --prefix)
     ICU_PREFIX := $(BREW_PREFIX)/opt/icu4c
-    CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --disable-nls CFLAGS="-Wno-unguarded-availability-new" --with-includes="$(BREW_PREFIX)/include:$(ICU_PREFIX)/include" --with-libraries="$(BREW_PREFIX)/lib:$(ICU_PREFIX)/lib"
-else ifeq ($(PLATFORM)-$(ARCH),linux-arm64)
-    CONFIGURE_FLAGS = --prefix=$(PREFIX) --without-openssl --without-icu --without-readline --without-zlib --disable-nls --host=aarch64-linux-gnu CC=aarch64-linux-gnu-gcc
+    LLVM_PREFIX := $(BREW_PREFIX)/opt/llvm
+    CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --with-lz4 --with-zstd --with-libxml --with-llvm --with-uuid=ossp --disable-nls CFLAGS="-Wno-unguarded-availability-new" --with-includes="$(BREW_PREFIX)/include:$(ICU_PREFIX)/include:$(LLVM_PREFIX)/include" --with-libraries="$(BREW_PREFIX)/lib:$(ICU_PREFIX)/lib:$(LLVM_PREFIX)/lib"
+else ifeq ($(PLATFORM),win32)
+    CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --with-lz4 --with-zstd --with-libxml --with-llvm --disable-nls
 else
-    CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --disable-nls
+    CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --with-lz4 --with-zstd --with-libxml --with-llvm --with-uuid=ossp --disable-nls
 endif
 
 .PHONY: all build clean download extract configure compile install package test
@@ -96,11 +97,7 @@ install:
 	mkdir -p $(INSTALL_DIR)
 	cd $(POSTGRES_SRC) && make install
 	@echo "🔨 Compiling pgvector..."
-ifeq ($(PLATFORM)-$(ARCH),linux-arm64)
-	cd $(PGVECTOR_SRC) && make PG_CONFIG=$(PREFIX)/bin/pg_config CC=aarch64-linux-gnu-gcc
-else
 	cd $(PGVECTOR_SRC) && make PG_CONFIG=$(PREFIX)/bin/pg_config
-endif
 	@echo "📦 Installing pgvector..."
 	cd $(PGVECTOR_SRC) && make install PG_CONFIG=$(PREFIX)/bin/pg_config
 
