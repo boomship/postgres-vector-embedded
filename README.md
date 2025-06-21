@@ -1,23 +1,37 @@
 # @boomship/postgres-vector-embedded
 
-⚠️ **DO NOT USE THIS VERSION - WORK IN PROGRESS** ⚠️
+⚠️ **Work in Progress** - Not ready for use
 
-This package is currently under active development and is not functional yet.
+Embedded PostgreSQL with pgvector extension for Node.js applications.
 
 ## What this will be
 
-A complete embedded PostgreSQL + pgvector solution for Node.js that includes:
+A complete embedded PostgreSQL + pgvector solution that:
 
-- PostgreSQL 17.2 binaries
-- pgvector 0.8.0 extension  
-- Cross-platform support (macOS, Linux, Windows)
-- Zero-config embedded database for vector similarity search
+- Includes PostgreSQL 17.2 binaries
+- Includes pgvector 0.8.0 extension
+- Works without external PostgreSQL installation
+- Supports vector similarity search out of the box
+- Cross-platform: macOS, Linux, Windows
+- Zero-config embedded database
+
+## Why this doesn't exist yet
+
+Existing solutions are incomplete:
+
+- `pgvector` - Client library only, requires existing PostgreSQL + pgvector
+- `embedded-postgres` - PostgreSQL only, no pgvector extension
+- `@mastra/vector-pg` - Client for existing installations
+- `pgserver` - Python solution with older PostgreSQL/pgvector versions
+
+This package will be the missing piece: **the complete embedded solution for Node.js with latest versions**.
 
 ## Current Status
 
-🚧 **Version 0.1.0**: Initial project setup
-🚧 **Next**: Building compilation pipeline and binary distribution system
+🚧 Building the compilation pipeline and binary distribution system.
 
 ## License
 
-MIT
+MIT - See LICENSE file for details.
+
+PostgreSQL and pgvector maintain their respective licenses (see licenses/ directory when available).
