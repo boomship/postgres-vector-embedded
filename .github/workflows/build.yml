@@ -26,7 +26,8 @@ jobs:
             arch: arm64
             setup: |
               sudo apt-get update
-              sudo apt-get install -y gcc-aarch64-linux-gnu qemu-user-static
+              sudo apt-get install -y gcc-aarch64-linux-gnu qemu-user-static binfmt-support
+              sudo apt-get install -y libssl-dev:arm64 libicu-dev:arm64 zlib1g-dev:arm64 libreadline-dev:arm64
               sudo update-binfmts --enable qemu-aarch64
           - os: windows-latest
             platform: win32
@@ -45,12 +46,12 @@ jobs:
       if: runner.os == 'Linux'
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential zlib1g-dev libreadline-dev libssl-dev
+        sudo apt-get install -y build-essential zlib1g-dev libreadline-dev libssl-dev libicu-dev
 
     - name: Install dependencies (macOS)
       if: runner.os == 'macOS'
       run: |
-        brew install openssl readline
+        brew install openssl readline icu4c
 
     - name: Install dependencies (Windows)
       if: runner.os == 'Windows'

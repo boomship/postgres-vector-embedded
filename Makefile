@@ -43,13 +43,13 @@ PGVECTOR_URL = https://github.com/pgvector/pgvector/archive/v$(PGVECTOR_VERSION)
 # Build configuration
 PREFIX = $(CURDIR)/$(INSTALL_DIR)
 
-# Build configuration - minimal for now with macOS compatibility
+# Build configuration with OpenSSL and ICU support
 ifeq ($(PLATFORM),darwin)
-    CONFIGURE_FLAGS = --prefix=$(PREFIX) --without-openssl --without-icu --disable-nls CFLAGS="-Wno-unguarded-availability-new"
+    CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --disable-nls CFLAGS="-Wno-unguarded-availability-new" --with-includes=/opt/homebrew/include --with-libraries=/opt/homebrew/lib
 else ifeq ($(PLATFORM)-$(ARCH),linux-arm64)
-    CONFIGURE_FLAGS = --prefix=$(PREFIX) --without-openssl --without-icu --disable-nls --host=aarch64-linux-gnu CC=aarch64-linux-gnu-gcc
+    CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --disable-nls --host=aarch64-linux-gnu CC=aarch64-linux-gnu-gcc --with-includes=/usr/include/aarch64-linux-gnu --with-libraries=/usr/lib/aarch64-linux-gnu
 else
-    CONFIGURE_FLAGS = --prefix=$(PREFIX) --without-openssl --without-icu --disable-nls
+    CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --disable-nls
 endif
 
 .PHONY: all build clean download extract configure compile install package test
