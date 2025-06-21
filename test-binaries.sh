@@ -17,9 +17,20 @@ echo "🧪 Testing PostgreSQL + pgvector binaries for ${PLATFORM}-${ARCH}"
 echo "   Using test directory: ${TEST_DIR}"
 echo "   Using test port: ${TEST_PORT}"
 
+# Debug: Check what's actually in the dist directory
+echo "📁 Contents of dist directory:"
+ls -la dist/ || echo "No dist directory found"
+
+if [ -d "dist/" ]; then
+    echo "📁 Contents of dist subdirectories:"
+    ls -la dist/*/
+fi
+
 # Check binaries exist
 if [ ! -f "${POSTGRES_DIR}/bin/postgres" ]; then
     echo "❌ PostgreSQL binary not found at ${POSTGRES_DIR}/bin/postgres"
+    echo "📁 Expected directory contents:"
+    ls -la "${POSTGRES_DIR}/" 2>/dev/null || echo "Directory ${POSTGRES_DIR} does not exist"
     exit 1
 fi
 
