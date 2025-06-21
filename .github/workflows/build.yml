@@ -73,7 +73,7 @@ jobs:
       run: |
         set PLATFORM=${{ matrix.platform }}
         set ARCH=${{ matrix.arch }}
-        C:\tools\msys64\usr\bin\bash.exe -lc "cd /d/a/postgres-vector-embedded/postgres-vector-embedded && export PLATFORM=${{ matrix.platform }} && export ARCH=${{ matrix.arch }} && make build"
+        C:\tools\msys64\mingw64.exe -lc "cd /d/a/postgres-vector-embedded/postgres-vector-embedded && export PLATFORM=${{ matrix.platform }} && export ARCH=${{ matrix.arch }} && make build"
 
     - name: Build PostgreSQL + pgvector (Unix)
       if: runner.os != 'Windows'
@@ -87,7 +87,7 @@ jobs:
       if: runner.os == 'Windows'
       shell: cmd
       run: |
-        C:\tools\msys64\usr\bin\bash.exe -lc "cd /d/a/postgres-vector-embedded/postgres-vector-embedded && export PLATFORM=${{ matrix.platform }} && export ARCH=${{ matrix.arch }} && ./test-binaries.sh"
+        C:\tools\msys64\mingw64.exe -lc "cd /d/a/postgres-vector-embedded/postgres-vector-embedded && export PLATFORM=${{ matrix.platform }} && export ARCH=${{ matrix.arch }} && ./test-binaries.sh"
 
     - name: Test binaries functionality (Unix)
       if: runner.os != 'Windows'
