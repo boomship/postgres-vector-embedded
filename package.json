@@ -1,0 +1,50 @@
+{
+  "name": "@boomship/postgres-vector-embedded",
+  "version": "0.1.0",
+  "description": "Embedded PostgreSQL with pgvector extension for Node.js applications",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "make build",
+    "test": "node test/basic.test.js",
+    "postinstall": "node scripts/postinstall.js"
+  },
+  "keywords": [
+    "postgresql",
+    "pgvector",
+    "embedded",
+    "vector",
+    "database",
+    "node.js",
+    "similarity-search"
+  ],
+  "author": "boomship",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/boomship/postgres-vector-embedded.git"
+  },
+  "bugs": {
+    "url": "https://github.com/boomship/postgres-vector-embedded/issues"
+  },
+  "homepage": "https://github.com/boomship/postgres-vector-embedded#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ],
+  "files": [
+    "src/",
+    "scripts/",
+    "licenses/",
+    "README.md",
+    "LICENSE"
+  ]
+}
