@@ -21,12 +21,9 @@ jobs:
           - os: ubuntu-latest
             platform: linux
             arch: x64
-          - os: ubuntu-latest
+          - os: ubuntu-24.04-arm64
             platform: linux
             arch: arm64
-            setup: |
-              sudo apt-get update
-              sudo apt-get install -y gcc-aarch64-linux-gnu
           - os: windows-latest
             platform: win32
             arch: x64
@@ -54,8 +51,8 @@ jobs:
     - name: Install dependencies (Windows)
       if: runner.os == 'Windows'
       run: |
-        # Windows dependencies will be handled via vcpkg or pre-built libraries
-        echo "Windows build setup"
+        # Install bison and other required tools for PostgreSQL build
+        choco install winflexbison3
 
     - name: Get version from package.json
       id: version
