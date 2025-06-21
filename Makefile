@@ -82,7 +82,7 @@ extract:
 configure:
 	@echo "⚙️  Configuring PostgreSQL build..."
 ifeq ($(PLATFORM),darwin)
-	cd $(POSTGRES_SRC) && PKG_CONFIG_PATH="$(ICU_PREFIX)/lib/pkgconfig:$(BREW_PREFIX)/lib/pkgconfig" LLVM_CONFIG="$(LLVM_PREFIX)/bin/llvm-config" CPPFLAGS="-I$(OSSP_UUID_PREFIX)/include" LDFLAGS="-L$(OSSP_UUID_PREFIX)/lib" ./configure $(CONFIGURE_FLAGS)
+	cd $(POSTGRES_SRC) && PKG_CONFIG_PATH="$(ICU_PREFIX)/lib/pkgconfig:$(BREW_PREFIX)/lib/pkgconfig" LLVM_CONFIG="$(LLVM_PREFIX)/bin/llvm-config" CPPFLAGS="-I$(OSSP_UUID_PREFIX)/include -D_DARWIN_C_SOURCE" LDFLAGS="-L$(OSSP_UUID_PREFIX)/lib" ./configure $(CONFIGURE_FLAGS)
 else
 	cd $(POSTGRES_SRC) && ./configure $(CONFIGURE_FLAGS)
 endif
