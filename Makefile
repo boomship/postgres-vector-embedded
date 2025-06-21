@@ -1,7 +1,7 @@
 # PostgreSQL + pgvector embedded build
 # Latest versions as of 2025-06-21
 
-POSTGRES_VERSION = 17.2
+POSTGRES_VERSION = 17.5
 PGVECTOR_VERSION = 0.8.0
 
 # Platform detection - use environment variables if set, otherwise detect
