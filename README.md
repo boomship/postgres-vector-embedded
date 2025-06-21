@@ -15,9 +15,10 @@ Embedded PostgreSQL with pgvector extension for Node.js applications.
 
 A complete embedded PostgreSQL + pgvector solution for Node.js applications:
 
-- **PostgreSQL 17.2** — full database engine included
-- **pgvector 0.8.0** — enables fast vector similarity search
-- **Cross-platform binaries** — macOS, Linux, Windows (x64 + ARM64)
+- **PostgreSQL 17.5** — latest stable database engine with full feature set
+- **pgvector 0.8.0** — enables fast vector similarity search with HNSW indexing
+- **Cross-platform binaries** — complete 5-platform coverage including ARM64
+- **Advanced capabilities** — SSL/TLS, modern compression, XML support, JIT compilation, UUID generation
 - **No manual setup** — everything is precompiled and ready to run
 - **TypeScript API** — spin up a local vector-ready database with one import
 
@@ -40,8 +41,8 @@ npm install @boomship/postgres-vector-embedded
 | macOS    | ARM64 (M1+) | ✅ Supported |
 | macOS    | x64 (Intel) | ✅ Supported |
 | Linux    | x64         | ✅ Supported |
+| Linux    | ARM64       | ✅ Supported |
 | Windows  | x64         | ✅ Supported |
-| Linux    | ARM64       | ⏸️ Planned |
 
 ### Basic Usage
 
@@ -169,7 +170,20 @@ interface PostgresServerOptions {
 
 Existing solutions are incomplete - they're either client libraries that require existing PostgreSQL installations, PostgreSQL-only packages without pgvector, or solutions with older versions.
 
-This package provides **the complete embedded solution** with latest versions of both PostgreSQL 17.2 and pgvector 0.8.0.
+This package provides **the complete embedded solution** with latest versions of PostgreSQL 17.5 and pgvector 0.8.0.
+
+## Advanced Capabilities
+
+Built with comprehensive feature support across all platforms:
+
+- **Security** — Full SSL/TLS encryption support
+- **Performance** — LLVM JIT compilation for complex queries
+- **Compression** — LZ4 and Zstandard algorithms for efficient storage
+- **Data Types** — Complete XML support and UUID generation
+- **Internationalization** — Full Unicode and collation support via ICU
+- **Vector Search** — pgvector with HNSW indexing for similarity search
+
+All features are consistently available across every supported platform, ensuring reliable deployment regardless of target architecture.
 
 
 ## 🤝 Curated Release
