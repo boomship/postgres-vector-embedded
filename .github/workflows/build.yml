@@ -52,7 +52,7 @@ jobs:
           # For ARM64, we'll use QEMU emulation - Docker already available on runner
           echo "Using QEMU emulation for ARM64 build"
         else
-          sudo apt-get install -y build-essential zlib1g-dev libreadline-dev libssl-dev libicu-dev liblz4-dev libzstd-dev libxml2-dev llvm-dev uuid-dev
+          sudo apt-get install -y build-essential zlib1g-dev libreadline-dev libssl-dev libicu-dev liblz4-dev libzstd-dev libxml2-dev llvm-dev uuid-dev clang
         fi
 
     - name: Install dependencies (macOS)
@@ -95,7 +95,7 @@ jobs:
           -w /workspace \
           ubuntu:22.04 bash -c "
             apt-get update && 
-            apt-get install -y build-essential curl make bison flex zlib1g-dev libreadline-dev libssl-dev libicu-dev liblz4-dev libzstd-dev libxml2-dev llvm-dev uuid-dev &&
+            apt-get install -y build-essential curl make bison flex zlib1g-dev libreadline-dev libssl-dev libicu-dev liblz4-dev libzstd-dev libxml2-dev llvm-dev uuid-dev clang &&
             export PLATFORM=${{ matrix.platform }} &&
             export ARCH=${{ matrix.arch }} &&
             make build
