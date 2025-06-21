@@ -53,6 +53,9 @@ jobs:
       run: |
         # Install bison and other required tools for PostgreSQL build
         choco install winflexbison3
+        # Create symlinks so configure can find the tools
+        New-Item -ItemType SymbolicLink -Path "C:\ProgramData\chocolatey\bin\bison.exe" -Target "C:\ProgramData\chocolatey\bin\win_bison.exe" -Force
+        New-Item -ItemType SymbolicLink -Path "C:\ProgramData\chocolatey\bin\flex.exe" -Target "C:\ProgramData\chocolatey\bin\win_flex.exe" -Force
 
     - name: Get version from package.json
       id: version
