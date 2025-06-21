@@ -37,12 +37,19 @@ jobs:
       if: matrix.setup
       run: ${{ matrix.setup }}
 
+    - name: Set up QEMU for ARM64
+      if: matrix.arch == 'arm64'
+      uses: docker/setup-qemu-action@v3
+      with:
+        platforms: linux/arm64
+
     - name: Install dependencies (Ubuntu)
       if: runner.os == 'Linux'
       run: |
         sudo apt-get update
         if [ "${{ matrix.arch }}" = "arm64" ]; then
-          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu build-essential
+          # For ARM64, we'll use QEMU emulation instead of cross-compilation
+          sudo apt-get install -y build-essential
         else
           sudo apt-get install -y build-essential zlib1g-dev libreadline-dev libssl-dev libicu-dev
         fi
@@ -79,8 +86,22 @@ jobs:
         set ARCH=${{ matrix.arch }}
         C:\tools\msys64\mingw64.exe -lc "cd /d/a/postgres-vector-embedded/postgres-vector-embedded && export PLATFORM=${{ matrix.platform }} && export ARCH=${{ matrix.arch }} && make build"
 
+    - name: Build PostgreSQL + pgvector (ARM64 with QEMU)
+      if: runner.os != 'Windows' && matrix.arch == 'arm64'
+      run: |
+        docker run --rm --platform linux/arm64 \
+          -v ${{ github.workspace }}:/workspace \
+          -w /workspace \
+          ubuntu:22.04 bash -c "
+            apt-get update && 
+            apt-get install -y build-essential curl make bison flex &&
+            export PLATFORM=${{ matrix.platform }} &&
+            export ARCH=${{ matrix.arch }} &&
+            make build
+          "
+
     - name: Build PostgreSQL + pgvector (Unix)
-      if: runner.os != 'Windows'
+      if: runner.os != 'Windows' && matrix.arch != 'arm64'
       shell: bash
       run: |
         export PLATFORM=${{ matrix.platform }}
