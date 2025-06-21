@@ -46,6 +46,8 @@ PREFIX = $(CURDIR)/$(INSTALL_DIR)
 # Build configuration - minimal for now with macOS compatibility
 ifeq ($(PLATFORM),darwin)
     CONFIGURE_FLAGS = --prefix=$(PREFIX) --without-openssl --without-icu --disable-nls CFLAGS="-Wno-unguarded-availability-new"
+else ifeq ($(PLATFORM)-$(ARCH),linux-arm64)
+    CONFIGURE_FLAGS = --prefix=$(PREFIX) --without-openssl --without-icu --disable-nls --host=aarch64-linux-gnu CC=aarch64-linux-gnu-gcc
 else
     CONFIGURE_FLAGS = --prefix=$(PREFIX) --without-openssl --without-icu --disable-nls
 endif
@@ -88,7 +90,11 @@ install:
 	mkdir -p $(INSTALL_DIR)
 	cd $(POSTGRES_SRC) && make install
 	@echo "🔨 Compiling pgvector..."
+ifeq ($(PLATFORM)-$(ARCH),linux-arm64)
+	cd $(PGVECTOR_SRC) && make PG_CONFIG=$(PREFIX)/bin/pg_config CC=aarch64-linux-gnu-gcc
+else
 	cd $(PGVECTOR_SRC) && make PG_CONFIG=$(PREFIX)/bin/pg_config
+endif
 	@echo "📦 Installing pgvector..."
 	cd $(PGVECTOR_SRC) && make install PG_CONFIG=$(PREFIX)/bin/pg_config
 
