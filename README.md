@@ -1,4 +1,7 @@
+<img src="./assets/boomship-logo.svg" alt="Boomship" width="80" align="left">
+
 # @boomship/postgres-vector-embedded
+
 [![Build](https://github.com/boomship/postgres-vector-embedded/actions/workflows/build.yml/badge.svg)](https://github.com/boomship/postgres-vector-embedded/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![npm](https://img.shields.io/npm/v/@boomship/postgres-vector-embedded)](https://www.npmjs.com/package/@boomship/postgres-vector-embedded)

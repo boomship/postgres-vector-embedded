@@ -87,7 +87,7 @@ jobs:
         C:\tools\msys64\mingw64.exe -lc "cd /d/a/postgres-vector-embedded/postgres-vector-embedded && export PLATFORM=${{ matrix.platform }} && export ARCH=${{ matrix.arch }} && make build"
 
     - name: Build PostgreSQL + pgvector (ARM64 with QEMU)
-      if: runner.os != 'Windows' && matrix.arch == 'arm64'
+      if: runner.os == 'Linux' && matrix.arch == 'arm64'
       run: |
         docker run --rm --platform linux/arm64 \
           -v ${{ github.workspace }}:/workspace \
@@ -115,15 +115,19 @@ jobs:
         C:\tools\msys64\mingw64.exe -lc "cd /d/a/postgres-vector-embedded/postgres-vector-embedded && export PLATFORM=${{ matrix.platform }} && export ARCH=${{ matrix.arch }} && ./test-binaries.sh"
 
     - name: Test binaries functionality (ARM64 with QEMU)
-      if: runner.os != 'Windows' && matrix.arch == 'arm64'
+      if: runner.os == 'Linux' && matrix.arch == 'arm64'
       run: |
         docker run --rm --platform linux/arm64 \
           -v ${{ github.workspace }}:/workspace \
           -w /workspace \
           ubuntu:22.04 bash -c "
-            export PLATFORM=${{ matrix.platform }} &&
-            export ARCH=${{ matrix.arch }} &&
-            ./test-binaries.sh
+            adduser --disabled-password --gecos '' testuser &&
+            chown -R testuser:testuser /workspace &&
+            su testuser -c '
+              export PLATFORM=${{ matrix.platform }} &&
+              export ARCH=${{ matrix.arch }} &&
+              ./test-binaries.sh
+            '
           "
 
     - name: Test binaries functionality (Unix)
