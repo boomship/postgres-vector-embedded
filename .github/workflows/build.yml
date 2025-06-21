@@ -123,7 +123,7 @@ jobs:
           -w /workspace \
           ubuntu:22.04 bash -c "
             apt-get update &&
-            apt-get install -y libxml2 libssl3 libicu70 liblz4-1 libzstd1 &&
+            apt-get install -y libxml2 libssl3 libicu70 liblz4-1 libzstd1 libreadline8 libuuid1 libz1g llvm-14-runtime clang-14 &&
             adduser --disabled-password --gecos '' testuser &&
             chown -R testuser:testuser /workspace &&
             su testuser -c '
