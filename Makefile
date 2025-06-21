@@ -49,7 +49,7 @@ ifeq ($(PLATFORM),darwin)
     ICU_PREFIX := $(BREW_PREFIX)/opt/icu4c
     CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --disable-nls CFLAGS="-Wno-unguarded-availability-new" --with-includes="$(BREW_PREFIX)/include:$(ICU_PREFIX)/include" --with-libraries="$(BREW_PREFIX)/lib:$(ICU_PREFIX)/lib"
 else ifeq ($(PLATFORM)-$(ARCH),linux-arm64)
-    CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --disable-nls --host=aarch64-linux-gnu CC=aarch64-linux-gnu-gcc --with-includes=/usr/include/aarch64-linux-gnu --with-libraries=/usr/lib/aarch64-linux-gnu
+    CONFIGURE_FLAGS = --prefix=$(PREFIX) --without-openssl --without-icu --disable-nls --host=aarch64-linux-gnu CC=aarch64-linux-gnu-gcc
 else
     CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --disable-nls
 endif

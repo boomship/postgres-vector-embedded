@@ -25,10 +25,8 @@ jobs:
             platform: linux
             arch: arm64
             setup: |
-              sudo dpkg --add-architecture arm64
               sudo apt-get update
               sudo apt-get install -y gcc-aarch64-linux-gnu qemu-user-static binfmt-support
-              sudo apt-get install -y libssl-dev:arm64 libicu-dev:arm64 zlib1g-dev:arm64 libreadline-dev:arm64
               sudo update-binfmts --enable qemu-aarch64
           - os: windows-latest
             platform: win32
