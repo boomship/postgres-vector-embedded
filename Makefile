@@ -52,7 +52,7 @@ ifeq ($(PLATFORM),darwin)
 else ifeq ($(PLATFORM),win32)
     CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --with-lz4 --with-zstd --with-libxml --with-llvm --disable-nls
 else
-    CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --with-lz4 --with-zstd --with-libxml --with-llvm --with-uuid=ossp --disable-nls
+    CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --with-lz4 --with-zstd --with-libxml --with-llvm --with-uuid=e2fs --disable-nls
 endif
 
 .PHONY: all build clean download extract configure compile install package test
@@ -81,7 +81,7 @@ extract:
 configure:
 	@echo "⚙️  Configuring PostgreSQL build..."
 ifeq ($(PLATFORM),darwin)
-	cd $(POSTGRES_SRC) && PKG_CONFIG_PATH="$(ICU_PREFIX)/lib/pkgconfig:$(BREW_PREFIX)/lib/pkgconfig" ./configure $(CONFIGURE_FLAGS)
+	cd $(POSTGRES_SRC) && PKG_CONFIG_PATH="$(ICU_PREFIX)/lib/pkgconfig:$(BREW_PREFIX)/lib/pkgconfig" LLVM_CONFIG="$(LLVM_PREFIX)/bin/llvm-config" ./configure $(CONFIGURE_FLAGS)
 else
 	cd $(POSTGRES_SRC) && ./configure $(CONFIGURE_FLAGS)
 endif
