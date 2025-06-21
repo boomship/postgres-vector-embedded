@@ -48,8 +48,7 @@ ifeq ($(PLATFORM),darwin)
     BREW_PREFIX := $(shell brew --prefix)
     ICU_PREFIX := $(BREW_PREFIX)/opt/icu4c
     LLVM_PREFIX := $(BREW_PREFIX)/opt/llvm
-    OSSP_UUID_PREFIX := $(BREW_PREFIX)/opt/ossp-uuid
-    CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --with-lz4 --with-zstd --with-libxml --with-llvm --with-uuid=ossp --disable-nls CFLAGS="-Wno-unguarded-availability-new" --with-includes="$(BREW_PREFIX)/include:$(ICU_PREFIX)/include:$(LLVM_PREFIX)/include:$(OSSP_UUID_PREFIX)/include" --with-libraries="$(BREW_PREFIX)/lib:$(ICU_PREFIX)/lib:$(LLVM_PREFIX)/lib:$(OSSP_UUID_PREFIX)/lib"
+    CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --with-lz4 --with-zstd --with-libxml --with-llvm --disable-nls CFLAGS="-Wno-unguarded-availability-new" --with-includes="$(BREW_PREFIX)/include:$(ICU_PREFIX)/include:$(LLVM_PREFIX)/include" --with-libraries="$(BREW_PREFIX)/lib:$(ICU_PREFIX)/lib:$(LLVM_PREFIX)/lib"
 else ifeq ($(PLATFORM),win32)
     CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --with-lz4 --with-zstd --with-libxml --with-llvm --disable-nls
 else
@@ -82,7 +81,7 @@ extract:
 configure:
 	@echo "⚙️  Configuring PostgreSQL build..."
 ifeq ($(PLATFORM),darwin)
-	cd $(POSTGRES_SRC) && PKG_CONFIG_PATH="$(ICU_PREFIX)/lib/pkgconfig:$(BREW_PREFIX)/lib/pkgconfig" LLVM_CONFIG="$(LLVM_PREFIX)/bin/llvm-config" CPPFLAGS="-I$(OSSP_UUID_PREFIX)/include -D_DARWIN_C_SOURCE" LDFLAGS="-L$(OSSP_UUID_PREFIX)/lib" ./configure $(CONFIGURE_FLAGS)
+	cd $(POSTGRES_SRC) && PKG_CONFIG_PATH="$(ICU_PREFIX)/lib/pkgconfig:$(BREW_PREFIX)/lib/pkgconfig" LLVM_CONFIG="$(LLVM_PREFIX)/bin/llvm-config" ./configure $(CONFIGURE_FLAGS)
 else
 	cd $(POSTGRES_SRC) && ./configure $(CONFIGURE_FLAGS)
 endif
