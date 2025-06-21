@@ -43,14 +43,22 @@ PGVECTOR_URL = https://github.com/pgvector/pgvector/archive/v$(PGVECTOR_VERSION)
 # Build configuration
 PREFIX = $(CURDIR)/$(INSTALL_DIR)
 
-# Build configuration - minimal for now
-CONFIGURE_FLAGS = --prefix=$(PREFIX) --without-openssl --without-icu --disable-nls
+# Build configuration - minimal for now with macOS compatibility
+ifeq ($(PLATFORM),darwin)
+    CONFIGURE_FLAGS = --prefix=$(PREFIX) --without-openssl --without-icu --disable-nls CFLAGS="-Wno-unguarded-availability-new"
+else
+    CONFIGURE_FLAGS = --prefix=$(PREFIX) --without-openssl --without-icu --disable-nls
+endif
 
-.PHONY: all build clean download extract configure compile install package
+.PHONY: all build clean download extract configure compile install package test
 
 all: build
 
 build: download extract configure compile install package
+
+test: build
+	@echo "🧪 Testing built binaries..."
+	./test-binaries.sh
 
 download:
 	@echo "📦 Downloading PostgreSQL $(POSTGRES_VERSION) and pgvector $(PGVECTOR_VERSION)..."
@@ -70,15 +78,17 @@ configure:
 	cd $(POSTGRES_SRC) && ./configure $(CONFIGURE_FLAGS)
 
 compile:
+	@echo "🔨 Generating headers..."
+	cd $(POSTGRES_SRC) && make -C ./src/backend generated-headers
 	@echo "🔨 Compiling PostgreSQL..."
 	cd $(POSTGRES_SRC) && make -j$(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
-	@echo "🔨 Compiling pgvector..."
-	cd $(PGVECTOR_SRC) && make PG_CONFIG=$(PREFIX)/bin/pg_config
 
 install:
 	@echo "📦 Installing PostgreSQL..."
 	mkdir -p $(INSTALL_DIR)
 	cd $(POSTGRES_SRC) && make install
+	@echo "🔨 Compiling pgvector..."
+	cd $(PGVECTOR_SRC) && make PG_CONFIG=$(PREFIX)/bin/pg_config
 	@echo "📦 Installing pgvector..."
 	cd $(PGVECTOR_SRC) && make install PG_CONFIG=$(PREFIX)/bin/pg_config
 

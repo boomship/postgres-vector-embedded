@@ -9,6 +9,7 @@ on:
 jobs:
   build:
     strategy:
+      fail-fast: false  # Don't stop other builds if one fails
       matrix:
         include:
           - os: macos-14
@@ -74,6 +75,13 @@ jobs:
         export ARCH=${{ matrix.arch }}
         make build
 
+    - name: Test binaries functionality
+      shell: bash
+      run: |
+        export PLATFORM=${{ matrix.platform }}
+        export ARCH=${{ matrix.arch }}
+        ./test-binaries.sh
+
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -83,7 +91,7 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && !failure()
     
     steps:
     - uses: actions/checkout@v4
@@ -104,6 +112,31 @@ jobs:
         mkdir release-assets
         find artifacts -name "*.tar.gz" -exec cp {} release-assets/ \;
         ls -la release-assets/
+        
+        # Check we have all expected platforms
+        expected_files=(
+          "postgres-darwin-arm64.tar.gz"
+          "postgres-darwin-x64.tar.gz" 
+          "postgres-linux-x64.tar.gz"
+          "postgres-linux-arm64.tar.gz"
+          "postgres-win32-x64.tar.gz"
+        )
+        
+        missing_files=()
+        for file in "${expected_files[@]}"; do
+          if [ ! -f "release-assets/$file" ]; then
+            missing_files+=("$file")
+          fi
+        done
+        
+        if [ ${#missing_files[@]} -gt 0 ]; then
+          echo "❌ Missing platform builds:"
+          printf '%s\n' "${missing_files[@]}"
+          echo "This release would be incomplete. Failing."
+          exit 1
+        fi
+        
+        echo "✅ All platform builds present"
 
     - name: Create Release
       uses: softprops/action-gh-release@v2
