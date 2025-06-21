@@ -153,14 +153,9 @@ interface PostgresServerOptions {
 
 ## Why This Package?
 
-Existing solutions are incomplete:
+Existing solutions are incomplete - they're either client libraries that require existing PostgreSQL installations, PostgreSQL-only packages without pgvector, or solutions with older versions.
 
-- **`pgvector`** - Client library only, requires existing PostgreSQL + pgvector
-- **`embedded-postgres`** - PostgreSQL only, no pgvector extension  
-- **`@mastra/vector-pg`** - Client for existing installations
-- **`pgserver`** - Python solution with older PostgreSQL/pgvector versions
-
-This package provides **the complete embedded solution** with latest versions.
+This package provides **the complete embedded solution** with latest versions of both PostgreSQL 17.2 and pgvector 0.8.0.
 
 ## Contributing
 
