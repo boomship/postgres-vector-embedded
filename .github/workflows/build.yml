@@ -1,0 +1,173 @@
+name: Build PostgreSQL + pgvector
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false  # Don't stop other builds if one fails
+      matrix:
+        include:
+          - os: macos-14
+            platform: darwin
+            arch: arm64
+          - os: macos-13
+            platform: darwin  
+            arch: x64
+          - os: ubuntu-latest
+            platform: linux
+            arch: x64
+          # Temporarily disabled due to Ubuntu ARM64 repository issues
+          # - os: ubuntu-latest
+          #   platform: linux
+          #   arch: arm64
+          - os: windows-latest
+            platform: win32
+            arch: x64
+
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up build environment
+      if: matrix.setup
+      run: ${{ matrix.setup }}
+
+    - name: Install dependencies (Ubuntu)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential zlib1g-dev libreadline-dev libssl-dev libicu-dev
+
+    - name: Install dependencies (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        brew install openssl readline icu4c
+
+    - name: Install dependencies (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        # Install MSYS2 for proper Unix-like build environment
+        choco install msys2 -y
+        # Initialize MSYS2 and install build tools
+        C:\tools\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm base-devel mingw-w64-x86_64-toolchain bison flex"
+
+    - name: Get version from package.json
+      id: version
+      shell: bash
+      run: |
+        VERSION=$(node -p "require('./package.json').version")
+        if [ "${{ github.event_name }}" == "pull_request" ]; then
+          VERSION="$VERSION-pr-${{ github.event.number }}"
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Building version: $VERSION"
+
+    - name: Build PostgreSQL + pgvector (Windows)
+      if: runner.os == 'Windows'
+      shell: cmd
+      run: |
+        set PLATFORM=${{ matrix.platform }}
+        set ARCH=${{ matrix.arch }}
+        C:\tools\msys64\mingw64.exe -lc "cd /d/a/postgres-vector-embedded/postgres-vector-embedded && export PLATFORM=${{ matrix.platform }} && export ARCH=${{ matrix.arch }} && make build"
+
+    - name: Build PostgreSQL + pgvector (Unix)
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |
+        export PLATFORM=${{ matrix.platform }}
+        export ARCH=${{ matrix.arch }}
+        make build
+
+    - name: Test binaries functionality (Windows)
+      if: runner.os == 'Windows'
+      shell: cmd
+      run: |
+        C:\tools\msys64\mingw64.exe -lc "cd /d/a/postgres-vector-embedded/postgres-vector-embedded && export PLATFORM=${{ matrix.platform }} && export ARCH=${{ matrix.arch }} && ./test-binaries.sh"
+
+    - name: Test binaries functionality (Unix)
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |
+        export PLATFORM=${{ matrix.platform }}
+        export ARCH=${{ matrix.arch }}
+        ./test-binaries.sh
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: postgres-${{ matrix.platform }}-${{ matrix.arch }}
+        path: dist/postgres-${{ matrix.platform }}-${{ matrix.arch }}.tar.gz
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && !failure()
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Get version from package.json
+      id: version
+      run: |
+        VERSION=$(node -p "require('./package.json').version")
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+
+    - name: Prepare release assets
+      run: |
+        mkdir release-assets
+        find artifacts -name "*.tar.gz" -exec cp {} release-assets/ \;
+        ls -la release-assets/
+        
+        # Check we have all expected platforms
+        expected_files=(
+          "postgres-darwin-arm64.tar.gz"
+          "postgres-darwin-x64.tar.gz" 
+          "postgres-linux-x64.tar.gz"
+          "postgres-linux-arm64.tar.gz"
+          "postgres-win32-x64.tar.gz"
+        )
+        
+        missing_files=()
+        for file in "${expected_files[@]}"; do
+          if [ ! -f "release-assets/$file" ]; then
+            missing_files+=("$file")
+          fi
+        done
+        
+        if [ ${#missing_files[@]} -gt 0 ]; then
+          echo "❌ Missing platform builds:"
+          printf '%s\n' "${missing_files[@]}"
+          echo "This release would be incomplete. Failing."
+          exit 1
+        fi
+        
+        echo "✅ All platform builds present"
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: v${{ steps.version.outputs.version }}
+        name: v${{ steps.version.outputs.version }}
+        body: |
+          PostgreSQL + pgvector embedded binaries
+          
+          Built from:
+          - PostgreSQL 17.2
+          - pgvector 0.8.0
+          
+          Download the appropriate binary for your platform and architecture.
+        files: release-assets/*
+        make_latest: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

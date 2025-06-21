@@ -1,9 +1,18 @@
 {
   "name": "@boomship/postgres-vector-embedded",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Embedded PostgreSQL with pgvector extension for Node.js applications",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
   "scripts": {
-    "prepublishOnly": "echo 'This package is not ready for publishing yet'"
+    "build": "tsc",
+    "build:binaries": "make build",
+    "lint": "biome lint src",
+    "format": "biome format --write src",
+    "check": "biome check --write src",
+    "test": "node dist/test/basic.test.js",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "postgresql",
@@ -37,7 +46,19 @@
     "arm64"
   ],
   "files": [
+    "dist/",
+    "examples/",
+    "licenses/",
     "README.md",
     "LICENSE"
-  ]
+  ],
+  "dependencies": {
+    "tar": "^7.4.3"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/node": "^22.0.0",
+    "@types/tar": "^6.1.13",
+    "typescript": "^5.6.0"
+  }
 }
