@@ -9,6 +9,7 @@ on:
 jobs:
   build:
     strategy:
+      fail-fast: false  # Don't stop other builds if one fails
       matrix:
         include:
           - os: macos-14
@@ -25,7 +26,15 @@ jobs:
             arch: arm64
             setup: |
               sudo apt-get update
-              sudo apt-get install -y gcc-aarch64-linux-gnu
+              sudo apt-get install -y gcc-aarch64-linux-gnu qemu-user-static binfmt-support
+              sudo dpkg --add-architecture arm64
+              sudo apt-get update
+              sudo apt-get install -y libc6:arm64
+              sudo update-binfmts --enable qemu-aarch64
+              # Test QEMU setup
+              echo 'int main(){return 0;}' | aarch64-linux-gnu-gcc -x c - -o test_arm64
+              qemu-aarch64-static test_arm64
+              rm test_arm64
           - os: windows-latest
             platform: win32
             arch: x64
@@ -43,18 +52,20 @@ jobs:
       if: runner.os == 'Linux'
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential zlib1g-dev libreadline-dev libssl-dev
+        sudo apt-get install -y build-essential zlib1g-dev libreadline-dev libssl-dev libicu-dev
 
     - name: Install dependencies (macOS)
       if: runner.os == 'macOS'
       run: |
-        brew install openssl readline
+        brew install openssl readline icu4c
 
     - name: Install dependencies (Windows)
       if: runner.os == 'Windows'
       run: |
-        # Windows dependencies will be handled via vcpkg or pre-built libraries
-        echo "Windows build setup"
+        # Install MSYS2 for proper Unix-like build environment
+        choco install msys2 -y
+        # Initialize MSYS2 and install build tools
+        C:\tools\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm base-devel mingw-w64-x86_64-toolchain bison flex"
 
     - name: Get version from package.json
       id: version
@@ -67,12 +78,35 @@ jobs:
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "Building version: $VERSION"
 
-    - name: Build PostgreSQL + pgvector
+    - name: Build PostgreSQL + pgvector (Windows)
+      if: runner.os == 'Windows'
+      shell: cmd
+      run: |
+        set PLATFORM=${{ matrix.platform }}
+        set ARCH=${{ matrix.arch }}
+        C:\tools\msys64\mingw64.exe -lc "cd /d/a/postgres-vector-embedded/postgres-vector-embedded && export PLATFORM=${{ matrix.platform }} && export ARCH=${{ matrix.arch }} && make build"
+
+    - name: Build PostgreSQL + pgvector (Unix)
+      if: runner.os != 'Windows'
       shell: bash
       run: |
         export PLATFORM=${{ matrix.platform }}
         export ARCH=${{ matrix.arch }}
         make build
+
+    - name: Test binaries functionality (Windows)
+      if: runner.os == 'Windows'
+      shell: cmd
+      run: |
+        C:\tools\msys64\mingw64.exe -lc "cd /d/a/postgres-vector-embedded/postgres-vector-embedded && export PLATFORM=${{ matrix.platform }} && export ARCH=${{ matrix.arch }} && ./test-binaries.sh"
+
+    - name: Test binaries functionality (Unix)
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |
+        export PLATFORM=${{ matrix.platform }}
+        export ARCH=${{ matrix.arch }}
+        ./test-binaries.sh
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
@@ -83,7 +117,7 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && !failure()
     
     steps:
     - uses: actions/checkout@v4
@@ -104,6 +138,31 @@ jobs:
         mkdir release-assets
         find artifacts -name "*.tar.gz" -exec cp {} release-assets/ \;
         ls -la release-assets/
+        
+        # Check we have all expected platforms
+        expected_files=(
+          "postgres-darwin-arm64.tar.gz"
+          "postgres-darwin-x64.tar.gz" 
+          "postgres-linux-x64.tar.gz"
+          "postgres-linux-arm64.tar.gz"
+          "postgres-win32-x64.tar.gz"
+        )
+        
+        missing_files=()
+        for file in "${expected_files[@]}"; do
+          if [ ! -f "release-assets/$file" ]; then
+            missing_files+=("$file")
+          fi
+        done
+        
+        if [ ${#missing_files[@]} -gt 0 ]; then
+          echo "❌ Missing platform builds:"
+          printf '%s\n' "${missing_files[@]}"
+          echo "This release would be incomplete. Failing."
+          exit 1
+        fi
+        
+        echo "✅ All platform builds present"
 
     - name: Create Release
       uses: softprops/action-gh-release@v2

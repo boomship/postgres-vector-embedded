@@ -4,29 +4,29 @@
 POSTGRES_VERSION = 17.2
 PGVECTOR_VERSION = 0.8.0
 
-# Platform detection
-UNAME_S := $(shell uname -s)
-UNAME_M := $(shell uname -m)
+# Platform detection - use environment variables if set, otherwise detect
+ifndef PLATFORM
+    UNAME_S := $(shell uname -s)
+    ifeq ($(UNAME_S),Darwin)
+        PLATFORM = darwin
+    else ifeq ($(UNAME_S),Linux)
+        PLATFORM = linux
+    else
+        PLATFORM = win32
+    endif
+endif
 
-ifeq ($(UNAME_S),Darwin)
-    PLATFORM = darwin
+ifndef ARCH
+    UNAME_M := $(shell uname -m)
     ifeq ($(UNAME_M),arm64)
         ARCH = arm64
-    else
-        ARCH = x64
-    endif
-else ifeq ($(UNAME_S),Linux)
-    PLATFORM = linux
-    ifeq ($(UNAME_M),x86_64)
-        ARCH = x64
     else ifeq ($(UNAME_M),aarch64)
         ARCH = arm64
+    else ifeq ($(UNAME_M),x86_64)
+        ARCH = x64
     else
-        ARCH = $(UNAME_M)
+        ARCH = x64
     endif
-else
-    PLATFORM = win32
-    ARCH = x64
 endif
 
 # Directories
@@ -42,13 +42,27 @@ PGVECTOR_URL = https://github.com/pgvector/pgvector/archive/v$(PGVECTOR_VERSION)
 
 # Build configuration
 PREFIX = $(CURDIR)/$(INSTALL_DIR)
-CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --enable-thread-safety
 
-.PHONY: all build clean download extract configure compile install package
+# Build configuration with OpenSSL and ICU support
+ifeq ($(PLATFORM),darwin)
+    BREW_PREFIX := $(shell brew --prefix)
+    ICU_PREFIX := $(BREW_PREFIX)/opt/icu4c
+    CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --disable-nls CFLAGS="-Wno-unguarded-availability-new" --with-includes="$(BREW_PREFIX)/include:$(ICU_PREFIX)/include" --with-libraries="$(BREW_PREFIX)/lib:$(ICU_PREFIX)/lib"
+else ifeq ($(PLATFORM)-$(ARCH),linux-arm64)
+    CONFIGURE_FLAGS = --prefix=$(PREFIX) --without-openssl --without-icu --without-readline --without-zlib --disable-nls --host=aarch64-linux-gnu CC=aarch64-linux-gnu-gcc
+else
+    CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --disable-nls
+endif
+
+.PHONY: all build clean download extract configure compile install package test
 
 all: build
 
 build: download extract configure compile install package
+
+test: build
+	@echo "🧪 Testing built binaries..."
+	./test-binaries.sh
 
 download:
 	@echo "📦 Downloading PostgreSQL $(POSTGRES_VERSION) and pgvector $(PGVECTOR_VERSION)..."
@@ -65,18 +79,28 @@ extract:
 
 configure:
 	@echo "⚙️  Configuring PostgreSQL build..."
+ifeq ($(PLATFORM),darwin)
+	cd $(POSTGRES_SRC) && PKG_CONFIG_PATH="$(ICU_PREFIX)/lib/pkgconfig:$(BREW_PREFIX)/lib/pkgconfig" ./configure $(CONFIGURE_FLAGS)
+else
 	cd $(POSTGRES_SRC) && ./configure $(CONFIGURE_FLAGS)
+endif
 
 compile:
+	@echo "🔨 Generating headers..."
+	cd $(POSTGRES_SRC) && make -C ./src/backend generated-headers
 	@echo "🔨 Compiling PostgreSQL..."
 	cd $(POSTGRES_SRC) && make -j$(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
-	@echo "🔨 Compiling pgvector..."
-	cd $(PGVECTOR_SRC) && make PG_CONFIG=$(PREFIX)/bin/pg_config
 
 install:
 	@echo "📦 Installing PostgreSQL..."
 	mkdir -p $(INSTALL_DIR)
 	cd $(POSTGRES_SRC) && make install
+	@echo "🔨 Compiling pgvector..."
+ifeq ($(PLATFORM)-$(ARCH),linux-arm64)
+	cd $(PGVECTOR_SRC) && make PG_CONFIG=$(PREFIX)/bin/pg_config CC=aarch64-linux-gnu-gcc
+else
+	cd $(PGVECTOR_SRC) && make PG_CONFIG=$(PREFIX)/bin/pg_config
+endif
 	@echo "📦 Installing pgvector..."
 	cd $(PGVECTOR_SRC) && make install PG_CONFIG=$(PREFIX)/bin/pg_config
 
