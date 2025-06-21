@@ -21,10 +21,9 @@ jobs:
           - os: ubuntu-latest
             platform: linux
             arch: x64
-          # Temporarily disabled due to Ubuntu ARM64 repository issues
-          # - os: ubuntu-latest
-          #   platform: linux
-          #   arch: arm64
+          - os: ubuntu-latest
+            platform: linux
+            arch: arm64
           - os: windows-latest
             platform: win32
             arch: x64
@@ -42,7 +41,11 @@ jobs:
       if: runner.os == 'Linux'
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential zlib1g-dev libreadline-dev libssl-dev libicu-dev
+        if [ "${{ matrix.arch }}" = "arm64" ]; then
+          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu build-essential
+        else
+          sudo apt-get install -y build-essential zlib1g-dev libreadline-dev libssl-dev libicu-dev
+        fi
 
     - name: Install dependencies (macOS)
       if: runner.os == 'macOS'
@@ -91,7 +94,7 @@ jobs:
         C:\tools\msys64\mingw64.exe -lc "cd /d/a/postgres-vector-embedded/postgres-vector-embedded && export PLATFORM=${{ matrix.platform }} && export ARCH=${{ matrix.arch }} && ./test-binaries.sh"
 
     - name: Test binaries functionality (Unix)
-      if: runner.os != 'Windows'
+      if: runner.os != 'Windows' && matrix.arch != 'arm64'
       shell: bash
       run: |
         export PLATFORM=${{ matrix.platform }}

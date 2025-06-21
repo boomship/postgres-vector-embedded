@@ -50,19 +50,15 @@ export class PostgresServer {
       this.dataDir,
       '-U',
       this.username,
-      '--pwfile=-',
       '--auth-local=trust',
-      '--auth-host=scram-sha-256',
+      '--auth-host=trust',
     ];
 
     await new Promise<void>((resolve, reject) => {
       const initdb = spawn(initdbPath, args, {
-        stdio: ['pipe', 'inherit', 'inherit'],
+        stdio: ['ignore', 'inherit', 'inherit'],
+        env: { ...globalThis.process.env, DYLD_LIBRARY_PATH: join(this.binariesDir, 'lib') },
       });
-
-      // Write password to stdin
-      initdb.stdin?.write(`${this.password}\\n`);
-      initdb.stdin?.end();
 
       initdb.on('close', (code: number | null) => {
         if (code === 0) {
@@ -98,6 +94,7 @@ export class PostgresServer {
 
     this.process = spawn(postgresPath, args, {
       stdio: ['ignore', 'inherit', 'inherit'],
+      env: { ...globalThis.process.env, DYLD_LIBRARY_PATH: join(this.binariesDir, 'lib') },
     });
 
     this.process.on('close', (code: number | null) => {
@@ -197,7 +194,11 @@ export class PostgresServer {
             ],
             {
               stdio: 'ignore',
-              env: { ...globalThis.process.env, PGPASSWORD: this.password },
+              env: { 
+                ...globalThis.process.env, 
+                PGPASSWORD: this.password,
+                DYLD_LIBRARY_PATH: join(this.binariesDir, 'lib')
+              },
             }
           );
 
@@ -247,7 +248,11 @@ export class PostgresServer {
         ],
         {
           stdio: 'inherit',
-          env: { ...globalThis.process.env, PGPASSWORD: this.password },
+          env: { 
+            ...globalThis.process.env, 
+            PGPASSWORD: this.password,
+            DYLD_LIBRARY_PATH: join(this.binariesDir, 'lib')
+          },
         }
       );
 
@@ -281,7 +286,7 @@ export class PostgresServer {
 
     const configLines = Object.entries(defaultConfig)
       .map(([key, value]) => `${key} = ${value}`)
-      .join('\\n');
+      .join('\n');
 
     await writeFile(configPath, configLines);
   }

@@ -53,12 +53,14 @@
     "LICENSE"
   ],
   "dependencies": {
+    "pg": "^8.16.2",
     "tar": "^7.4.3"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
+    "@biomejs/biome": "^2.0.4",
     "@types/node": "^22.0.0",
+    "@types/pg": "^8.15.4",
     "@types/tar": "^6.1.13",
-    "typescript": "^5.6.0"
+    "typescript": "^5.8.3"
   }
 }
