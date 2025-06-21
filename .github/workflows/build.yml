@@ -101,7 +101,7 @@ jobs:
           "
 
     - name: Build PostgreSQL + pgvector (Unix)
-      if: runner.os != 'Windows' && matrix.arch != 'arm64'
+      if: runner.os != 'Windows' && !(runner.os == 'Linux' && matrix.arch == 'arm64')
       shell: bash
       run: |
         export PLATFORM=${{ matrix.platform }}
