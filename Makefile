@@ -4,29 +4,29 @@
 POSTGRES_VERSION = 17.2
 PGVECTOR_VERSION = 0.8.0
 
-# Platform detection
-UNAME_S := $(shell uname -s)
-UNAME_M := $(shell uname -m)
+# Platform detection - use environment variables if set, otherwise detect
+ifndef PLATFORM
+    UNAME_S := $(shell uname -s)
+    ifeq ($(UNAME_S),Darwin)
+        PLATFORM = darwin
+    else ifeq ($(UNAME_S),Linux)
+        PLATFORM = linux
+    else
+        PLATFORM = win32
+    endif
+endif
 
-ifeq ($(UNAME_S),Darwin)
-    PLATFORM = darwin
+ifndef ARCH
+    UNAME_M := $(shell uname -m)
     ifeq ($(UNAME_M),arm64)
         ARCH = arm64
-    else
-        ARCH = x64
-    endif
-else ifeq ($(UNAME_S),Linux)
-    PLATFORM = linux
-    ifeq ($(UNAME_M),x86_64)
-        ARCH = x64
     else ifeq ($(UNAME_M),aarch64)
         ARCH = arm64
+    else ifeq ($(UNAME_M),x86_64)
+        ARCH = x64
     else
-        ARCH = $(UNAME_M)
+        ARCH = x64
     endif
-else
-    PLATFORM = win32
-    ARCH = x64
 endif
 
 # Directories
