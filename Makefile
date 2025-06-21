@@ -45,7 +45,8 @@ PREFIX = $(CURDIR)/$(INSTALL_DIR)
 
 # Build configuration with OpenSSL and ICU support
 ifeq ($(PLATFORM),darwin)
-    CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --disable-nls CFLAGS="-Wno-unguarded-availability-new" --with-includes=/opt/homebrew/include --with-libraries=/opt/homebrew/lib
+    ICU_VERSION := $(shell brew list --versions icu4c | head -1 | awk '{print $$2}')
+    CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --disable-nls CFLAGS="-Wno-unguarded-availability-new" --with-includes="/opt/homebrew/include:/opt/homebrew/opt/icu4c/include" --with-libraries="/opt/homebrew/lib:/opt/homebrew/opt/icu4c/lib" PKG_CONFIG_PATH="/opt/homebrew/opt/icu4c/lib/pkgconfig:/opt/homebrew/lib/pkgconfig"
 else ifeq ($(PLATFORM)-$(ARCH),linux-arm64)
     CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --disable-nls --host=aarch64-linux-gnu CC=aarch64-linux-gnu-gcc --with-includes=/usr/include/aarch64-linux-gnu --with-libraries=/usr/lib/aarch64-linux-gnu
 else
@@ -77,7 +78,11 @@ extract:
 
 configure:
 	@echo "⚙️  Configuring PostgreSQL build..."
+ifeq ($(PLATFORM),darwin)
+	cd $(POSTGRES_SRC) && PKG_CONFIG_PATH="/opt/homebrew/opt/icu4c/lib/pkgconfig:/opt/homebrew/lib/pkgconfig" ./configure $(CONFIGURE_FLAGS)
+else
 	cd $(POSTGRES_SRC) && ./configure $(CONFIGURE_FLAGS)
+endif
 
 compile:
 	@echo "🔨 Generating headers..."
