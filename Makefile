@@ -42,7 +42,9 @@ PGVECTOR_URL = https://github.com/pgvector/pgvector/archive/v$(PGVECTOR_VERSION)
 
 # Build configuration
 PREFIX = $(CURDIR)/$(INSTALL_DIR)
-CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --enable-thread-safety
+
+# Build configuration - minimal for now
+CONFIGURE_FLAGS = --prefix=$(PREFIX) --without-openssl --without-icu --disable-nls
 
 .PHONY: all build clean download extract configure compile install package
 
