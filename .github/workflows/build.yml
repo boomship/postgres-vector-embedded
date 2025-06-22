@@ -68,17 +68,17 @@ jobs:
       if: runner.os == 'Windows'
       run: |
         choco install winflexbison3
-        $toolsPath = "C:\ProgramData\chocolatey\lib\winflexbison3\tools"
-        echo "$toolsPath" >> $env:GITHUB_PATH
+        toolsPath="/c/ProgramData/chocolatey/lib/winflexbison3/tools"
+        echo "$toolsPath" >> $GITHUB_PATH
         # Create symlinks if the executables are named win_bison/win_flex
-        if (Test-Path "$toolsPath\win_bison.exe") {
-          New-Item -ItemType SymbolicLink -Path "$toolsPath\bison.exe" -Target "$toolsPath\win_bison.exe"
-        }
-        if (Test-Path "$toolsPath\win_flex.exe") {
-          New-Item -ItemType SymbolicLink -Path "$toolsPath\flex.exe" -Target "$toolsPath\win_flex.exe"
-        }
+        if [ -f "$toolsPath/win_bison.exe" ]; then
+          ln -s "$toolsPath/win_bison.exe" "$toolsPath/bison.exe"
+        fi
+        if [ -f "$toolsPath/win_flex.exe" ]; then
+          ln -s "$toolsPath/win_flex.exe" "$toolsPath/flex.exe"
+        fi
         # List what's actually available
-        Get-ChildItem $toolsPath
+        ls -la "$toolsPath"
 
     - name: Get version from package.json
       id: version
