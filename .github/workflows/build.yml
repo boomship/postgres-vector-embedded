@@ -86,46 +86,66 @@ jobs:
         fi
         
         echo "=== Installing OpenSSL via vcpkg ==="
-        /c/vcpkg/vcpkg.exe install openssl:x64-windows
+        # Install both mingw and msvc versions to get .a files for MinGW
+        /c/vcpkg/vcpkg.exe install openssl:x64-mingw-dynamic openssl:x64-windows
         
         # Create legacy library symlinks for MinGW
-        if [ -d "/c/vcpkg/installed/x64-windows/lib" ]; then
-          cd /c/vcpkg/installed/x64-windows/lib/
-          echo "Available libraries:"
-          ls -la
-          
-          # For MinGW, we need .a files, not .lib files
-          # Try to find and link crypto libs
-          for lib in libcrypto.a crypto.a libcrypto.lib crypto.lib; do
-            if [ -f "$lib" ]; then
-              echo "Creating libeay32.a from $lib"
-              cp "$lib" libeay32.a
-              echo "Creating eay32.lib from $lib" 
-              cp "$lib" eay32.lib
+        FOUND_LIBS=false
+        
+        # First try mingw installation (should have .a files)
+        for vcpkg_dir in "/c/vcpkg/installed/x64-mingw-dynamic" "/c/vcpkg/installed/x64-windows"; do
+          if [ -d "$vcpkg_dir/lib" ]; then
+            cd "$vcpkg_dir/lib/"
+            echo "=== Checking $vcpkg_dir/lib ==="
+            ls -la
+            
+            # Try to find and link crypto libs (MinGW needs .a files)
+            for lib in libcrypto.a crypto.a; do
+              if [ -f "$lib" ]; then
+                echo "Creating legacy crypto symlinks from $lib"
+                cp "$lib" libeay32.a
+                cp "$lib" eay32.a
+                FOUND_LIBS=true
+                break
+              fi
+            done
+            
+            # Try to find and link ssl libs
+            for lib in libssl.a ssl.a; do
+              if [ -f "$lib" ]; then
+                echo "Creating legacy ssl symlinks from $lib"
+                cp "$lib" libssleay32.a
+                cp "$lib" ssleay32.a
+                FOUND_LIBS=true
+                break
+              fi
+            done
+            
+            if [ "$FOUND_LIBS" = "true" ]; then
+              echo "=== Final library listing ==="
+              ls -la *ssl* *eay* 2>/dev/null || echo "No SSL libraries found"
               break
             fi
-          done
-          
-          # Try to find and link ssl libs
-          for lib in libssl.a ssl.a libssl.lib ssl.lib; do
-            if [ -f "$lib" ]; then
-              echo "Creating libssleay32.a from $lib"
-              cp "$lib" libssleay32.a
-              echo "Creating ssleay32.lib from $lib"
-              cp "$lib" ssleay32.lib
-              break
-            fi
-          done
-          
-          echo "=== Final library listing ==="
-          ls -la *ssl* *eay* 2>/dev/null || echo "No SSL libraries found"
-          echo "=== Windows dependency installation complete ==="
-        else
-          echo "ERROR: vcpkg lib directory not found"
-          # Try to use system OpenSSL instead
-          echo "Looking for system OpenSSL libraries..."
-          find /mingw64 -name "*ssl*" -name "*.a" 2>/dev/null | head -5
+          fi
+        done
+        
+        if [ "$FOUND_LIBS" = "false" ]; then
+          echo "ERROR: Could not find OpenSSL .a libraries in vcpkg"
+          echo "Trying system MinGW OpenSSL..."
+          if [ -d "/mingw64/lib" ]; then
+            cd /mingw64/lib
+            for lib in libcrypto.a libssl.a; do
+              if [ -f "$lib" ]; then
+                echo "Found system $lib, creating symlinks"
+                [ "$lib" = "libcrypto.a" ] && cp "$lib" libeay32.a && cp "$lib" eay32.a
+                [ "$lib" = "libssl.a" ] && cp "$lib" libssleay32.a && cp "$lib" ssleay32.a
+                FOUND_LIBS=true
+              fi
+            done
+          fi
         fi
+        
+        echo "=== Windows dependency installation complete (found libs: $FOUND_LIBS) ==="
 
 
     - name: Get version from package.json

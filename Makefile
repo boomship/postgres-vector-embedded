@@ -50,8 +50,11 @@ ifeq ($(PLATFORM),darwin)
     LLVM_PREFIX := $(BREW_PREFIX)/opt/llvm
     CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --with-lz4 --with-zstd --with-libxml --with-llvm --with-uuid=e2fs --disable-nls CFLAGS="-Wno-unguarded-availability-new" --with-includes="$(BREW_PREFIX)/include:$(ICU_PREFIX)/include:$(LLVM_PREFIX)/include" --with-libraries="$(BREW_PREFIX)/lib:$(ICU_PREFIX)/lib:$(LLVM_PREFIX)/lib"
 else ifeq ($(PLATFORM),win32)
-    VCPKG_ROOT := /c/vcpkg/installed/x64-windows
-    CONFIGURE_FLAGS = --prefix=$(PREFIX) --disable-nls --with-openssl --without-icu --without-llvm --without-lz4 --without-zstd --without-libxml --with-includes=$(VCPKG_ROOT)/include --with-libraries=$(VCPKG_ROOT)/lib
+    # Try mingw vcpkg first (has .a files), fallback to system mingw, then windows vcpkg
+    VCPKG_MINGW := /c/vcpkg/installed/x64-mingw-dynamic
+    VCPKG_WIN := /c/vcpkg/installed/x64-windows
+    MINGW_SYS := /mingw64
+    CONFIGURE_FLAGS = --prefix=$(PREFIX) --disable-nls --with-openssl --without-icu --without-llvm --without-lz4 --without-zstd --without-libxml --with-includes="$(VCPKG_MINGW)/include:$(MINGW_SYS)/include:$(VCPKG_WIN)/include" --with-libraries="$(VCPKG_MINGW)/lib:$(MINGW_SYS)/lib:$(VCPKG_WIN)/lib"
 else
     CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --with-lz4 --with-zstd --with-libxml --with-llvm --with-uuid=e2fs --disable-nls
 endif
