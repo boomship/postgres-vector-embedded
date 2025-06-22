@@ -68,7 +68,9 @@ jobs:
       if: runner.os == 'Windows'
       run: |
         # Install OpenSSL via MSYS2 (has proper library naming)
-        /c/msys64/usr/bin/pacman.exe -S --noconfirm mingw-w64-x86_64-openssl
+        /c/msys64/usr/bin/pacman.exe -S --noconfirm mingw-w64-x86_64-openssl mingw-w64-x86_64-gcc mingw-w64-x86_64-make
+        # Add MSYS2 mingw64 to PATH so we use the right toolchain
+        echo "/c/msys64/mingw64/bin" >> $GITHUB_PATH
         # Keep our working bison/flex setup
         choco install winflexbison3
         toolsPath="/c/ProgramData/chocolatey/lib/winflexbison3/tools"
