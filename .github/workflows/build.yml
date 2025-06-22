@@ -30,6 +30,10 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     
+    defaults:
+      run:
+        shell: ${{ matrix.os == 'windows-latest' && 'bash' || 'bash' }}
+    
     steps:
     - uses: actions/checkout@v4
     
@@ -63,10 +67,7 @@ jobs:
     - name: Install dependencies (Windows)
       if: runner.os == 'Windows'
       run: |
-        # Install MSYS2 for proper Unix-like build environment
-        choco install msys2 -y
-        # Initialize MSYS2 and install build tools
-        C:\tools\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm base-devel mingw-w64-x86_64-toolchain bison flex mingw-w64-x86_64-openssl mingw-w64-x86_64-zlib mingw-w64-x86_64-readline mingw-w64-x86_64-icu mingw-w64-x86_64-lz4 mingw-w64-x86_64-zstd mingw-w64-x86_64-libxml2 mingw-w64-x86_64-llvm mingw-w64-x86_64-clang"
+        choco install make
 
     - name: Get version from package.json
       id: version
@@ -81,11 +82,10 @@ jobs:
 
     - name: Build PostgreSQL + pgvector (Windows)
       if: runner.os == 'Windows'
-      shell: cmd
       run: |
-        set PLATFORM=${{ matrix.platform }}
-        set ARCH=${{ matrix.arch }}
-        C:\tools\msys64\usr\bin\bash.exe -lc "source /etc/profile && export PATH=/mingw64/bin:$PATH && echo 'MSYS2 + MinGW64 PATH setup' && which make && which gcc && cd /d/a/postgres-vector-embedded/postgres-vector-embedded && export PLATFORM=${{ matrix.platform }} && export ARCH=${{ matrix.arch }} && make build"
+        export PLATFORM=${{ matrix.platform }}
+        export ARCH=${{ matrix.arch }}
+        make build
 
     - name: Build PostgreSQL + pgvector (ARM64 with QEMU)
       if: runner.os == 'Linux' && matrix.arch == 'arm64'
