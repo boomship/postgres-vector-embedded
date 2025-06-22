@@ -67,7 +67,11 @@ jobs:
     - name: Install dependencies (Windows)
       if: runner.os == 'Windows'
       run: |
-        # Revert to basic setup - get Windows working first
+        # Install vcpkg for clean OpenSSL integration
+        git clone https://github.com/Microsoft/vcpkg.git C:/vcpkg
+        C:/vcpkg/bootstrap-vcpkg.bat
+        C:/vcpkg/vcpkg.exe install openssl:x64-windows
+        
         # Keep our working bison/flex setup
         choco install winflexbison3
         toolsPath="/c/ProgramData/chocolatey/lib/winflexbison3/tools"
