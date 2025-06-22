@@ -64,41 +64,34 @@ jobs:
       run: |
         brew install openssl readline icu4c lz4 zstd libxml2 llvm e2fsprogs
 
-    - name: Install bison/flex (Windows)
+    - name: Install dependencies (Windows)
       if: runner.os == 'Windows'
       run: |
+        echo "=== Windows dependency installation starting ==="
+        
         # Keep our working bison/flex setup
+        echo "Installing winflexbison3..."
         choco install winflexbison3
+        
+        # Add bison/flex to PATH
         toolsPath="/c/ProgramData/chocolatey/lib/winflexbison3/tools"
         echo "$toolsPath" >> $GITHUB_PATH
-        # Create symlinks if the executables are named win_bison/win_flex
+        
+        # Create symlinks if needed
         if [ -f "$toolsPath/win_bison.exe" ]; then
           ln -s "$toolsPath/win_bison.exe" "$toolsPath/bison.exe"
         fi
         if [ -f "$toolsPath/win_flex.exe" ]; then
           ln -s "$toolsPath/win_flex.exe" "$toolsPath/flex.exe"
         fi
-
-    - name: Debug Windows detection
-      if: runner.os == 'Windows'
-      run: |
-        echo "Windows detected, proceeding with vcpkg..."
-        echo "Runner OS: ${{ runner.os }}"
-
-    - name: Install OpenSSL via vcpkg (Windows)
-      if: runner.os == 'Windows'
-      run: |
-        # Install OpenSSL via vcpkg (vcpkg already available on runner)
-        echo "Installing OpenSSL via vcpkg..."
+        
+        echo "=== Installing OpenSSL via vcpkg ==="
         /c/vcpkg/vcpkg.exe install openssl:x64-windows
         
-        # Check if the directory exists
+        # Create legacy library symlinks
         if [ -d "/c/vcpkg/installed/x64-windows/lib" ]; then
-          echo "=== vcpkg lib directory found ==="
           cd /c/vcpkg/installed/x64-windows/lib/
-          ls -la . | head -20
-          
-          # Create legacy library name symlinks for PostgreSQL linker
+          # Try to find and copy crypto libs
           for lib in libcrypto.lib crypto.lib; do
             if [ -f "$lib" ]; then
               echo "Creating eay32.lib from $lib"
@@ -106,7 +99,7 @@ jobs:
               break
             fi
           done
-          
+          # Try to find and copy ssl libs
           for lib in libssl.lib ssl.lib; do
             if [ -f "$lib" ]; then
               echo "Creating ssleay32.lib from $lib"  
@@ -114,14 +107,11 @@ jobs:
               break
             fi
           done
-          
-          echo "=== Final library list ==="
-          ls -la *ssl* *crypto* *eay32* 2>/dev/null || echo "No SSL libraries found"
+          echo "=== Windows dependency installation complete ==="
         else
-          echo "ERROR: vcpkg lib directory not found at /c/vcpkg/installed/x64-windows/lib"
-          echo "Checking if vcpkg directory exists..."
-          ls -la /c/vcpkg/ || echo "vcpkg directory not found"
+          echo "ERROR: vcpkg lib directory not found"
         fi
+
 
     - name: Get version from package.json
       id: version
