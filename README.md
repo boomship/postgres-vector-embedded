@@ -13,14 +13,14 @@ Embedded PostgreSQL with pgvector extension for Node.js applications.
 
 ## Overview
 
-A complete embedded PostgreSQL + pgvector solution for Node.js applications:
+An embedded PostgreSQL + pgvector solution for Node.js applications:
 
-- **PostgreSQL 17.5** — latest stable database engine with full feature set
-- **pgvector 0.8.0** — enables fast vector similarity search with HNSW indexing
-- **Cross-platform binaries** — complete 5-platform coverage including ARM64
-- **Advanced capabilities** — SSL/TLS, modern compression, XML support, JIT compilation, UUID generation
-- **No manual setup** — everything is precompiled and ready to run
-- **TypeScript API** — spin up a local vector-ready database with one import
+- **PostgreSQL 17.5** — latest stable database engine  
+- **pgvector 0.8.0** — enables vector similarity search with HNSW indexing
+- **Cross-platform binaries** — 5-platform coverage including ARM64
+- **Advanced capabilities** — SSL/TLS, compression, XML support, JIT compilation *(macOS, Linux)*
+- **No manual setup** — precompiled binaries ready to run
+- **TypeScript API** — example code to get started quickly
 
 Ideal for projects needing vector search *without* relying on external Postgres instances or Docker.
 
@@ -110,7 +110,7 @@ await server.stop();
 
 ## Build System
 
-This package includes a complete cross-platform build system:
+This package includes a cross-platform build system:
 
 - **Makefile** with platform detection and compilation
 - **GitHub Actions** for automated CI/CD
@@ -172,11 +172,11 @@ interface PostgresServerOptions {
 
 Existing solutions are incomplete - they're either client libraries that require existing PostgreSQL installations, PostgreSQL-only packages without pgvector, or solutions with older versions.
 
-This package provides **the complete embedded solution** with latest versions of PostgreSQL 17.5 and pgvector 0.8.0.
+This package provides **an embedded solution** with PostgreSQL 17.5 and pgvector 0.8.0, with feature sets varying by platform.
 
 ## Advanced Capabilities
 
-Built with comprehensive feature support across most platforms:
+Available features vary by platform:
 
 - **Security** — Full SSL/TLS encryption support *(macOS, Linux)*
 - **Performance** — LLVM JIT compilation for complex queries *(macOS, Linux)*
