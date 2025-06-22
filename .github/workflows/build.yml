@@ -67,7 +67,7 @@ jobs:
     - name: Install dependencies (Windows)
       if: runner.os == 'Windows'
       run: |
-        choco install make bison flex
+        choco install make winflexbison3
 
     - name: Get version from package.json
       id: version
