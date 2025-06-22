@@ -122,9 +122,10 @@ jobs:
 
     - name: Test binaries functionality (Windows)
       if: runner.os == 'Windows'
-      shell: cmd
       run: |
-        C:\tools\msys64\mingw64.exe -lc "cd /d/a/postgres-vector-embedded/postgres-vector-embedded && export PLATFORM=${{ matrix.platform }} && export ARCH=${{ matrix.arch }} && ./test-binaries.sh"
+        export PLATFORM=${{ matrix.platform }}
+        export ARCH=${{ matrix.arch }}
+        ./test-binaries.sh
 
     - name: Test binaries functionality (ARM64 with QEMU)
       if: runner.os == 'Linux' && matrix.arch == 'arm64'
