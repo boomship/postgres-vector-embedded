@@ -85,7 +85,7 @@ jobs:
       run: |
         set PLATFORM=${{ matrix.platform }}
         set ARCH=${{ matrix.arch }}
-        C:\tools\msys64\mingw64.exe -lc "echo 'MSYS2 shell started' && pwd && ls -la && which make && which gcc && echo 'Environment check complete' && cd /d/a/postgres-vector-embedded/postgres-vector-embedded && export PLATFORM=${{ matrix.platform }} && export ARCH=${{ matrix.arch }} && echo 'Starting make build...' && make build"
+        C:\tools\msys64\usr\bin\bash.exe -lc "echo 'MSYS2 shell started' && pwd && ls -la && which make && which gcc && echo 'Environment check complete' && cd /d/a/postgres-vector-embedded/postgres-vector-embedded && export PLATFORM=${{ matrix.platform }} && export ARCH=${{ matrix.arch }} && echo 'Starting make build...' && make build"
 
     - name: Build PostgreSQL + pgvector (ARM64 with QEMU)
       if: runner.os == 'Linux' && matrix.arch == 'arm64'
