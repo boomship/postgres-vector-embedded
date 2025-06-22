@@ -64,18 +64,34 @@ jobs:
       run: |
         brew install openssl readline icu4c lz4 zstd libxml2 llvm e2fsprogs
 
-    - name: Install dependencies (Windows)
+    - name: Install bison/flex (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        # Keep our working bison/flex setup
+        choco install winflexbison3
+        toolsPath="/c/ProgramData/chocolatey/lib/winflexbison3/tools"
+        echo "$toolsPath" >> $GITHUB_PATH
+        # Create symlinks if the executables are named win_bison/win_flex
+        if [ -f "$toolsPath/win_bison.exe" ]; then
+          ln -s "$toolsPath/win_bison.exe" "$toolsPath/bison.exe"
+        fi
+        if [ -f "$toolsPath/win_flex.exe" ]; then
+          ln -s "$toolsPath/win_flex.exe" "$toolsPath/flex.exe"
+        fi
+
+    - name: Install OpenSSL via vcpkg (Windows)
       if: runner.os == 'Windows'
       run: |
         # Install OpenSSL via vcpkg (vcpkg already available on runner)
+        echo "Installing OpenSSL via vcpkg..."
         C:/vcpkg/vcpkg.exe install openssl:x64-windows
         
-        # Wait for installation to complete and create legacy library symlinks
-        cd /c/vcpkg/installed/x64-windows/lib/
+        # Check what was installed
         echo "=== Checking vcpkg OpenSSL installation ==="
-        ls -la . | head -20
+        ls -la /c/vcpkg/installed/x64-windows/lib/ | head -20
         
         # Create legacy library name symlinks for PostgreSQL linker
+        cd /c/vcpkg/installed/x64-windows/lib/
         for lib in libcrypto.lib crypto.lib; do
           if [ -f "$lib" ]; then
             echo "Creating eay32.lib from $lib"
@@ -94,18 +110,6 @@ jobs:
         
         echo "=== Final library list ==="
         ls -la *ssl* *crypto* *eay32* 2>/dev/null || echo "No SSL libraries found"
-        
-        # Keep our working bison/flex setup
-        choco install winflexbison3
-        toolsPath="/c/ProgramData/chocolatey/lib/winflexbison3/tools"
-        echo "$toolsPath" >> $GITHUB_PATH
-        # Create symlinks if the executables are named win_bison/win_flex
-        if [ -f "$toolsPath/win_bison.exe" ]; then
-          ln -s "$toolsPath/win_bison.exe" "$toolsPath/bison.exe"
-        fi
-        if [ -f "$toolsPath/win_flex.exe" ]; then
-          ln -s "$toolsPath/win_flex.exe" "$toolsPath/flex.exe"
-        fi
 
     - name: Get version from package.json
       id: version
