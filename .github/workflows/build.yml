@@ -68,6 +68,7 @@ jobs:
       if: runner.os == 'Windows'
       run: |
         choco install make winflexbison3
+        echo "C:\ProgramData\chocolatey\lib\winflexbison3\tools" >> $GITHUB_PATH
 
     - name: Get version from package.json
       id: version
