@@ -50,8 +50,7 @@ ifeq ($(PLATFORM),darwin)
     LLVM_PREFIX := $(BREW_PREFIX)/opt/llvm
     CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --with-lz4 --with-zstd --with-libxml --with-llvm --with-uuid=e2fs --disable-nls CFLAGS="-Wno-unguarded-availability-new" --with-includes="$(BREW_PREFIX)/include:$(ICU_PREFIX)/include:$(LLVM_PREFIX)/include" --with-libraries="$(BREW_PREFIX)/lib:$(ICU_PREFIX)/lib:$(LLVM_PREFIX)/lib"
 else ifeq ($(PLATFORM),win32)
-    MINGW_PREFIX := /c/msys64/mingw64
-    CONFIGURE_FLAGS = --prefix=$(PREFIX) --disable-nls --with-openssl --without-icu --without-llvm --without-lz4 --without-zstd --without-libxml --with-includes="$(MINGW_PREFIX)/include" --with-libraries="$(MINGW_PREFIX)/lib"
+    CONFIGURE_FLAGS = --prefix=$(PREFIX) --disable-nls --without-openssl --without-icu --without-llvm --without-lz4 --without-zstd --without-libxml
 else
     CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --with-lz4 --with-zstd --with-libxml --with-llvm --with-uuid=e2fs --disable-nls
 endif
