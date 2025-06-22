@@ -31,7 +31,7 @@ endif
 
 # Directories
 BUILD_DIR = build
-DIST_DIR = dist
+DIST_DIR = postgres-dist
 POSTGRES_SRC = $(BUILD_DIR)/postgresql-$(POSTGRES_VERSION)
 PGVECTOR_SRC = $(BUILD_DIR)/pgvector-$(PGVECTOR_VERSION)
 INSTALL_DIR = $(DIST_DIR)/postgres-$(PLATFORM)-$(ARCH)
