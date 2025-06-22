@@ -103,9 +103,6 @@ Thumbs.db
 *.swo
 *~
 
-# Claude IDE files
-.claude/
-
 # PostgreSQL data and binaries (for testing)
 postgres-data/
 postgres-binaries/
@@ -114,3 +111,6 @@ postgres-binaries/
 # Test artifacts
 test-results/
 coverage/
+
+# Claude IDE files
+.claude/
