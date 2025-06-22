@@ -69,18 +69,31 @@ jobs:
       run: |
         # Install OpenSSL via vcpkg (vcpkg already available on runner)
         C:/vcpkg/vcpkg.exe install openssl:x64-windows
-        # Create legacy library name symlinks for PostgreSQL configure
-        cd C:/vcpkg/installed/x64-windows/lib/
-        # Create eay32.lib -> libcrypto.lib if needed
-        if [ -f "libcrypto.lib" ] && [ ! -f "eay32.lib" ]; then
-          cp libcrypto.lib eay32.lib
-        fi
-        # Create ssleay32.lib -> libssl.lib if needed  
-        if [ -f "libssl.lib" ] && [ ! -f "ssleay32.lib" ]; then
-          cp libssl.lib ssleay32.lib
-        fi
-        # Show what we have
-        ls -la *ssl* *crypto* *eay32* 2>/dev/null || echo "Libraries not found with expected names"
+        
+        # Wait for installation to complete and create legacy library symlinks
+        cd /c/vcpkg/installed/x64-windows/lib/
+        echo "=== Checking vcpkg OpenSSL installation ==="
+        ls -la . | head -20
+        
+        # Create legacy library name symlinks for PostgreSQL linker
+        for lib in libcrypto.lib crypto.lib; do
+          if [ -f "$lib" ]; then
+            echo "Creating eay32.lib from $lib"
+            cp "$lib" eay32.lib
+            break
+          fi
+        done
+        
+        for lib in libssl.lib ssl.lib; do
+          if [ -f "$lib" ]; then
+            echo "Creating ssleay32.lib from $lib"  
+            cp "$lib" ssleay32.lib
+            break
+          fi
+        done
+        
+        echo "=== Final library list ==="
+        ls -la *ssl* *crypto* *eay32* 2>/dev/null || echo "No SSL libraries found"
         
         # Keep our working bison/flex setup
         choco install winflexbison3
