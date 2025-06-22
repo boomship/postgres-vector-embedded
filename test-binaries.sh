@@ -68,19 +68,21 @@ sleep 2
 
 # Test 4: Basic PostgreSQL functionality
 echo "🔧 Testing basic PostgreSQL operations..."
-${POSTGRES_DIR}/bin/psql -p ${TEST_PORT} -d postgres -c "SELECT version();"
-${POSTGRES_DIR}/bin/psql -p ${TEST_PORT} -d postgres -c "CREATE TABLE test_table (id int, name text);"
-${POSTGRES_DIR}/bin/psql -p ${TEST_PORT} -d postgres -c "INSERT INTO test_table VALUES (1, 'test');"
-${POSTGRES_DIR}/bin/psql -p ${TEST_PORT} -d postgres -c "SELECT * FROM test_table;"
+# Connect as the current user to template1 database
+USER=$(whoami)
+${POSTGRES_DIR}/bin/psql -p ${TEST_PORT} -d template1 -U ${USER} -c "SELECT version();"
+${POSTGRES_DIR}/bin/psql -p ${TEST_PORT} -d template1 -U ${USER} -c "CREATE TABLE test_table (id int, name text);"
+${POSTGRES_DIR}/bin/psql -p ${TEST_PORT} -d template1 -U ${USER} -c "INSERT INTO test_table VALUES (1, 'test');"
+${POSTGRES_DIR}/bin/psql -p ${TEST_PORT} -d template1 -U ${USER} -c "SELECT * FROM test_table;"
 
 # Test 5: pgvector extension
 echo "🔢 Testing pgvector extension..."
-${POSTGRES_DIR}/bin/psql -p ${TEST_PORT} -d postgres -c "CREATE EXTENSION vector;"
-${POSTGRES_DIR}/bin/psql -p ${TEST_PORT} -d postgres -c "SELECT '[1,2,3]'::vector;"
+${POSTGRES_DIR}/bin/psql -p ${TEST_PORT} -d template1 -U ${USER} -c "CREATE EXTENSION vector;"
+${POSTGRES_DIR}/bin/psql -p ${TEST_PORT} -d template1 -U ${USER} -c "SELECT '[1,2,3]'::vector;"
 
 # Test 6: Vector operations
 echo "📐 Testing vector operations..."
-${POSTGRES_DIR}/bin/psql -p ${TEST_PORT} -d postgres -c "
+${POSTGRES_DIR}/bin/psql -p ${TEST_PORT} -d template1 -U ${USER} -c "
 CREATE TABLE test_vectors (id int, embedding vector(3));
 INSERT INTO test_vectors VALUES 
   (1, '[1,2,3]'),
