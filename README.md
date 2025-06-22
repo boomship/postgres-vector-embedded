@@ -36,13 +36,15 @@ npm install @boomship/postgres-vector-embedded
 
 ## Platform Support
 
-| Platform | Architecture | Status |
-|----------|-------------|---------|
-| macOS    | ARM64 (M1+) | ✅ Supported |
-| macOS    | x64 (Intel) | ✅ Supported |
-| Linux    | x64         | ✅ Supported |
-| Linux    | ARM64       | ✅ Supported |
-| Windows  | x64         | ✅ Supported |
+| Platform | Architecture | Status | Features |
+|----------|-------------|---------|----------|
+| macOS    | ARM64 (M1+) | ✅ Supported | Full (SSL, ICU, LZ4, ZSTD, XML, LLVM, UUID) |
+| macOS    | x64 (Intel) | ✅ Supported | Full (SSL, ICU, LZ4, ZSTD, XML, LLVM, UUID) |
+| Linux    | x64         | ✅ Supported | Full (SSL, ICU, LZ4, ZSTD, XML, LLVM, UUID) |
+| Linux    | ARM64       | ✅ Supported | Full (SSL, ICU, LZ4, ZSTD, XML, LLVM, UUID) |
+| Windows  | x64         | ⚠️ Limited | Basic (PostgreSQL + pgvector only) |
+
+> **Windows Status**: Currently experiencing build issues with advanced features. The Windows build provides basic PostgreSQL + pgvector functionality but lacks SSL encryption, compression, XML support, and other enterprise features. We're working to restore full feature parity in future releases.
 
 ### Basic Usage
 
@@ -174,16 +176,16 @@ This package provides **the complete embedded solution** with latest versions of
 
 ## Advanced Capabilities
 
-Built with comprehensive feature support across all platforms:
+Built with comprehensive feature support across most platforms:
 
-- **Security** — Full SSL/TLS encryption support
-- **Performance** — LLVM JIT compilation for complex queries
-- **Compression** — LZ4 and Zstandard algorithms for efficient storage
-- **Data Types** — Complete XML support and UUID generation
-- **Internationalization** — Full Unicode and collation support via ICU
-- **Vector Search** — pgvector with HNSW indexing for similarity search
+- **Security** — Full SSL/TLS encryption support *(macOS, Linux)*
+- **Performance** — LLVM JIT compilation for complex queries *(macOS, Linux)*
+- **Compression** — LZ4 and Zstandard algorithms for efficient storage *(macOS, Linux)*
+- **Data Types** — Complete XML support and UUID generation *(macOS, Linux)*
+- **Internationalization** — Full Unicode and collation support via ICU *(macOS, Linux)*
+- **Vector Search** — pgvector with HNSW indexing for similarity search *(all platforms)*
 
-All features are consistently available across every supported platform, ensuring reliable deployment regardless of target architecture.
+> **Note**: Windows builds currently include only core PostgreSQL + pgvector functionality. Advanced features are available on macOS and Linux platforms. We're actively working to restore full Windows feature support in upcoming releases.
 
 
 ## 🤝 Curated Release
