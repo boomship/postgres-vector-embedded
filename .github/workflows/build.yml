@@ -84,32 +84,38 @@ jobs:
       run: |
         # Install OpenSSL via vcpkg (vcpkg already available on runner)
         echo "Installing OpenSSL via vcpkg..."
-        C:/vcpkg/vcpkg.exe install openssl:x64-windows
+        /c/vcpkg/vcpkg.exe install openssl:x64-windows
         
-        # Check what was installed
-        echo "=== Checking vcpkg OpenSSL installation ==="
-        ls -la /c/vcpkg/installed/x64-windows/lib/ | head -20
-        
-        # Create legacy library name symlinks for PostgreSQL linker
-        cd /c/vcpkg/installed/x64-windows/lib/
-        for lib in libcrypto.lib crypto.lib; do
-          if [ -f "$lib" ]; then
-            echo "Creating eay32.lib from $lib"
-            cp "$lib" eay32.lib
-            break
-          fi
-        done
-        
-        for lib in libssl.lib ssl.lib; do
-          if [ -f "$lib" ]; then
-            echo "Creating ssleay32.lib from $lib"  
-            cp "$lib" ssleay32.lib
-            break
-          fi
-        done
-        
-        echo "=== Final library list ==="
-        ls -la *ssl* *crypto* *eay32* 2>/dev/null || echo "No SSL libraries found"
+        # Check if the directory exists
+        if [ -d "/c/vcpkg/installed/x64-windows/lib" ]; then
+          echo "=== vcpkg lib directory found ==="
+          cd /c/vcpkg/installed/x64-windows/lib/
+          ls -la . | head -20
+          
+          # Create legacy library name symlinks for PostgreSQL linker
+          for lib in libcrypto.lib crypto.lib; do
+            if [ -f "$lib" ]; then
+              echo "Creating eay32.lib from $lib"
+              cp "$lib" eay32.lib
+              break
+            fi
+          done
+          
+          for lib in libssl.lib ssl.lib; do
+            if [ -f "$lib" ]; then
+              echo "Creating ssleay32.lib from $lib"  
+              cp "$lib" ssleay32.lib
+              break
+            fi
+          done
+          
+          echo "=== Final library list ==="
+          ls -la *ssl* *crypto* *eay32* 2>/dev/null || echo "No SSL libraries found"
+        else
+          echo "ERROR: vcpkg lib directory not found at /c/vcpkg/installed/x64-windows/lib"
+          echo "Checking if vcpkg directory exists..."
+          ls -la /c/vcpkg/ || echo "vcpkg directory not found"
+        fi
 
     - name: Get version from package.json
       id: version
