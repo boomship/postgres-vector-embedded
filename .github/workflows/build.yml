@@ -79,6 +79,12 @@ jobs:
           ln -s "$toolsPath/win_flex.exe" "$toolsPath/flex.exe"
         fi
 
+    - name: Debug Windows detection
+      if: runner.os == 'Windows'
+      run: |
+        echo "Windows detected, proceeding with vcpkg..."
+        echo "Runner OS: ${{ runner.os }}"
+
     - name: Install OpenSSL via vcpkg (Windows)
       if: runner.os == 'Windows'
       run: |
