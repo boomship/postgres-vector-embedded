@@ -67,9 +67,7 @@ jobs:
     - name: Install dependencies (Windows)
       if: runner.os == 'Windows'
       run: |
-        # Install vcpkg for clean OpenSSL integration
-        git clone https://github.com/Microsoft/vcpkg.git C:/vcpkg
-        C:/vcpkg/bootstrap-vcpkg.bat
+        # Install OpenSSL via vcpkg (vcpkg already available on runner)
         C:/vcpkg/vcpkg.exe install openssl:x64-windows
         
         # Keep our working bison/flex setup
