@@ -88,28 +88,43 @@ jobs:
         echo "=== Installing OpenSSL via vcpkg ==="
         /c/vcpkg/vcpkg.exe install openssl:x64-windows
         
-        # Create legacy library symlinks
+        # Create legacy library symlinks for MinGW
         if [ -d "/c/vcpkg/installed/x64-windows/lib" ]; then
           cd /c/vcpkg/installed/x64-windows/lib/
-          # Try to find and copy crypto libs
-          for lib in libcrypto.lib crypto.lib; do
+          echo "Available libraries:"
+          ls -la
+          
+          # For MinGW, we need .a files, not .lib files
+          # Try to find and link crypto libs
+          for lib in libcrypto.a crypto.a libcrypto.lib crypto.lib; do
             if [ -f "$lib" ]; then
-              echo "Creating eay32.lib from $lib"
+              echo "Creating libeay32.a from $lib"
+              cp "$lib" libeay32.a
+              echo "Creating eay32.lib from $lib" 
               cp "$lib" eay32.lib
               break
             fi
           done
-          # Try to find and copy ssl libs
-          for lib in libssl.lib ssl.lib; do
+          
+          # Try to find and link ssl libs
+          for lib in libssl.a ssl.a libssl.lib ssl.lib; do
             if [ -f "$lib" ]; then
-              echo "Creating ssleay32.lib from $lib"  
+              echo "Creating libssleay32.a from $lib"
+              cp "$lib" libssleay32.a
+              echo "Creating ssleay32.lib from $lib"
               cp "$lib" ssleay32.lib
               break
             fi
           done
+          
+          echo "=== Final library listing ==="
+          ls -la *ssl* *eay* 2>/dev/null || echo "No SSL libraries found"
           echo "=== Windows dependency installation complete ==="
         else
           echo "ERROR: vcpkg lib directory not found"
+          # Try to use system OpenSSL instead
+          echo "Looking for system OpenSSL libraries..."
+          find /mingw64 -name "*ssl*" -name "*.a" 2>/dev/null | head -5
         fi
 
 
