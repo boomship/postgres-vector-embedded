@@ -69,7 +69,7 @@ jobs:
       run: |
         echo "=== Windows dependency installation starting ==="
         
-        # Keep our working bison/flex setup
+        # Install only essential build tools - no OpenSSL for now
         echo "Installing winflexbison3..."
         choco install winflexbison3
         
@@ -85,102 +85,7 @@ jobs:
           ln -s "$toolsPath/win_flex.exe" "$toolsPath/flex.exe"
         fi
         
-        echo "=== Installing OpenSSL via vcpkg ==="
-        # Install both mingw and msvc versions to get .a files for MinGW
-        /c/vcpkg/vcpkg.exe install openssl:x64-mingw-dynamic openssl:x64-windows
-        
-        # Create legacy library symlinks for MinGW
-        FOUND_LIBS=false
-        
-        # First try mingw installation (should have .a files)
-        for vcpkg_dir in "/c/vcpkg/installed/x64-mingw-dynamic" "/c/vcpkg/installed/x64-windows"; do
-          if [ -d "$vcpkg_dir/lib" ]; then
-            cd "$vcpkg_dir/lib/"
-            echo "=== Checking $vcpkg_dir/lib ==="
-            ls -la
-            
-            # Try to find and link crypto libs (MinGW needs .a files)
-            for lib in libcrypto.a crypto.a; do
-              if [ -f "$lib" ]; then
-                echo "Creating crypto symlinks from $lib"
-                # Legacy names for old PostgreSQL configure scripts
-                cp "$lib" libeay32.a
-                cp "$lib" eay32.a  
-                # Modern names for current builds
-                cp "$lib" libcrypto.a 2>/dev/null || true
-                cp "$lib" crypto.a 2>/dev/null || true
-                FOUND_LIBS=true
-                break
-              fi
-            done
-            
-            # Try to find and link ssl libs
-            for lib in libssl.a ssl.a; do
-              if [ -f "$lib" ]; then
-                echo "Creating ssl symlinks from $lib"
-                # Legacy names for old PostgreSQL configure scripts  
-                cp "$lib" libssleay32.a
-                cp "$lib" ssleay32.a
-                # Modern names for current builds
-                cp "$lib" libssl.a 2>/dev/null || true
-                cp "$lib" ssl.a 2>/dev/null || true
-                FOUND_LIBS=true
-                break
-              fi
-            done
-            
-            if [ "$FOUND_LIBS" = "true" ]; then
-              echo "=== Final library listing ==="
-              ls -la *ssl* *eay* 2>/dev/null || echo "No SSL libraries found"
-              break
-            fi
-          fi
-        done
-        
-        if [ "$FOUND_LIBS" = "false" ]; then
-          echo "ERROR: Could not find OpenSSL .a libraries in vcpkg"
-          echo "Installing OpenSSL via chocolatey as fallback..."
-          choco install openssl -y
-          
-          echo "Trying system MinGW OpenSSL..."
-          for search_dir in "/mingw64/lib" "/c/Program Files/OpenSSL-Win64/lib" "/c/tools/openssl/lib"; do
-            if [ -d "$search_dir" ]; then
-              cd "$search_dir"
-              echo "Searching in $search_dir"
-              ls -la *ssl* *crypto* 2>/dev/null || true
-              
-              for lib in libcrypto.a crypto.a libcrypto.lib; do
-                if [ -f "$lib" ]; then
-                  echo "Found crypto library: $lib"
-                  cp "$lib" libeay32.a 2>/dev/null || true
-                  cp "$lib" eay32.a 2>/dev/null || true
-                  cp "$lib" libcrypto.a 2>/dev/null || true
-                  cp "$lib" crypto.a 2>/dev/null || true
-                  FOUND_LIBS=true
-                fi
-              done
-              
-              for lib in libssl.a ssl.a libssl.lib; do
-                if [ -f "$lib" ]; then
-                  echo "Found ssl library: $lib"
-                  cp "$lib" libssleay32.a 2>/dev/null || true
-                  cp "$lib" ssleay32.a 2>/dev/null || true
-                  cp "$lib" libssl.a 2>/dev/null || true
-                  cp "$lib" ssl.a 2>/dev/null || true
-                  FOUND_LIBS=true
-                fi
-              done
-              
-              if [ "$FOUND_LIBS" = "true" ]; then
-                echo "=== Libraries found in $search_dir ==="
-                ls -la *ssl* *eay* *crypto* 2>/dev/null || true
-                break
-              fi
-            fi
-          done
-        fi
-        
-        echo "=== Windows dependency installation complete (found libs: $FOUND_LIBS) ==="
+        echo "=== Windows dependency installation complete (minimal build) ==="
 
 
     - name: Get version from package.json
