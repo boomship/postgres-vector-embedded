@@ -77,6 +77,10 @@ jobs:
         if [ -f "$toolsPath/win_flex.exe" ]; then
           ln -s "$toolsPath/win_flex.exe" "$toolsPath/flex.exe"
         fi
+        # Debug: Check where OpenSSL was installed
+        echo "=== OpenSSL installation paths ==="
+        find /c/ProgramData/chocolatey -name "*ssl*" -type d 2>/dev/null || echo "No SSL dirs found"
+        find /c/ProgramData/chocolatey -name "*crypto*" -o -name "*eay32*" 2>/dev/null || echo "No crypto libs found"
         # List what's actually available
         ls -la "$toolsPath"
 
