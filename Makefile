@@ -50,11 +50,13 @@ ifeq ($(PLATFORM),darwin)
     LLVM_PREFIX := $(BREW_PREFIX)/opt/llvm
     CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --with-lz4 --with-zstd --with-libxml --with-llvm --with-uuid=e2fs --disable-nls CFLAGS="-Wno-unguarded-availability-new" --with-includes="$(BREW_PREFIX)/include:$(ICU_PREFIX)/include:$(LLVM_PREFIX)/include" --with-libraries="$(BREW_PREFIX)/lib:$(ICU_PREFIX)/lib:$(LLVM_PREFIX)/lib"
 else ifeq ($(PLATFORM),win32)
-    # Try mingw vcpkg first (has .a files), fallback to system mingw, then windows vcpkg
+    # Multiple OpenSSL search paths for different installation methods
     VCPKG_MINGW := /c/vcpkg/installed/x64-mingw-dynamic
     VCPKG_WIN := /c/vcpkg/installed/x64-windows
     MINGW_SYS := /mingw64
-    CONFIGURE_FLAGS = --prefix=$(PREFIX) --disable-nls --with-openssl --without-icu --without-llvm --without-lz4 --without-zstd --without-libxml --with-includes="$(VCPKG_MINGW)/include:$(MINGW_SYS)/include:$(VCPKG_WIN)/include" --with-libraries="$(VCPKG_MINGW)/lib:$(MINGW_SYS)/lib:$(VCPKG_WIN)/lib"
+    OPENSSL_CHOCO := /c/Program Files/OpenSSL-Win64
+    OPENSSL_TOOLS := /c/tools/openssl
+    CONFIGURE_FLAGS = --prefix=$(PREFIX) --disable-nls --with-openssl --without-icu --without-llvm --without-lz4 --without-zstd --without-libxml --with-includes="$(VCPKG_MINGW)/include:$(MINGW_SYS)/include:$(VCPKG_WIN)/include:$(OPENSSL_CHOCO)/include:$(OPENSSL_TOOLS)/include" --with-libraries="$(VCPKG_MINGW)/lib:$(MINGW_SYS)/lib:$(VCPKG_WIN)/lib:$(OPENSSL_CHOCO)/lib:$(OPENSSL_TOOLS)/lib"
 else
     CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --with-lz4 --with-zstd --with-libxml --with-llvm --with-uuid=e2fs --disable-nls
 endif
