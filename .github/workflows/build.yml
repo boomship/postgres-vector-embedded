@@ -85,7 +85,7 @@ jobs:
       run: |
         set PLATFORM=${{ matrix.platform }}
         set ARCH=${{ matrix.arch }}
-        C:\tools\msys64\mingw64.exe -lc "cd /d/a/postgres-vector-embedded/postgres-vector-embedded && export PLATFORM=${{ matrix.platform }} && export ARCH=${{ matrix.arch }} && make build"
+        C:\tools\msys64\mingw64.exe -lc "cd /d/a/postgres-vector-embedded/postgres-vector-embedded && export PLATFORM=${{ matrix.platform }} && export ARCH=${{ matrix.arch }} && make build && echo 'Build completed, checking dist directory:' && ls -la dist/ && echo 'Looking for tar.gz files:' && find . -name '*.tar.gz' -ls"
 
     - name: Build PostgreSQL + pgvector (ARM64 with QEMU)
       if: runner.os == 'Linux' && matrix.arch == 'arm64'
