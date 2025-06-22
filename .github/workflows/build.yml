@@ -69,6 +69,12 @@ jobs:
       run: |
         # Install OpenSSL via vcpkg (vcpkg already available on runner)
         C:/vcpkg/vcpkg.exe install openssl:x64-windows
+        # Debug: Check what vcpkg installed
+        echo "=== vcpkg OpenSSL installation ==="
+        ls -la C:/vcpkg/installed/x64-windows/lib/ | grep -i ssl || echo "No SSL libs found"
+        ls -la C:/vcpkg/installed/x64-windows/lib/ | grep -i crypto || echo "No crypto libs found"
+        find C:/vcpkg/installed/x64-windows -name "*.lib" | grep -i ssl
+        find C:/vcpkg/installed/x64-windows -name "*.lib" | grep -i crypto
         
         # Keep our working bison/flex setup
         choco install winflexbison3
