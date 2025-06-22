@@ -66,11 +66,20 @@ jobs:
 
     - name: Install dependencies (Windows)
       if: runner.os == 'Windows'
-      shell: cmd
       run: |
-        C:\msys64\usr\bin\pacman.exe -S --noconfirm mingw-w64-x86_64-gcc mingw-w64-x86_64-make mingw-w64-x86_64-openssl bison flex
-        echo C:\msys64\mingw64\bin>> %GITHUB_PATH%
-        echo C:\msys64\usr\bin>> %GITHUB_PATH%
+        # Install OpenSSL via MSYS2 (has proper library naming)
+        C:\msys64\usr\bin\pacman.exe -S --noconfirm mingw-w64-x86_64-openssl
+        # Keep our working bison/flex setup
+        choco install winflexbison3
+        toolsPath="/c/ProgramData/chocolatey/lib/winflexbison3/tools"
+        echo "$toolsPath" >> $GITHUB_PATH
+        # Create symlinks if the executables are named win_bison/win_flex
+        if [ -f "$toolsPath/win_bison.exe" ]; then
+          ln -s "$toolsPath/win_bison.exe" "$toolsPath/bison.exe"
+        fi
+        if [ -f "$toolsPath/win_flex.exe" ]; then
+          ln -s "$toolsPath/win_flex.exe" "$toolsPath/flex.exe"
+        fi
 
     - name: Get version from package.json
       id: version
@@ -85,9 +94,10 @@ jobs:
 
     - name: Build PostgreSQL + pgvector (Windows)
       if: runner.os == 'Windows'
-      shell: cmd
       run: |
-        C:\msys64\mingw64.exe -lc "cd /d/a/postgres-vector-embedded/postgres-vector-embedded && export PLATFORM=${{ matrix.platform }} && export ARCH=${{ matrix.arch }} && make build"
+        export PLATFORM=${{ matrix.platform }}
+        export ARCH=${{ matrix.arch }}
+        make build
 
     - name: Build PostgreSQL + pgvector (ARM64 with QEMU)
       if: runner.os == 'Linux' && matrix.arch == 'arm64'
@@ -113,9 +123,10 @@ jobs:
 
     - name: Test binaries functionality (Windows)
       if: runner.os == 'Windows'
-      shell: cmd
       run: |
-        C:\msys64\mingw64.exe -lc "cd /d/a/postgres-vector-embedded/postgres-vector-embedded && export PLATFORM=${{ matrix.platform }} && export ARCH=${{ matrix.arch }} && ./test-binaries.sh"
+        export PLATFORM=${{ matrix.platform }}
+        export ARCH=${{ matrix.arch }}
+        ./test-binaries.sh
 
     - name: Test binaries functionality (ARM64 with QEMU)
       if: runner.os == 'Linux' && matrix.arch == 'arm64'
