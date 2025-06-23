@@ -120,32 +120,27 @@ jobs:
           echo "=== Lite variant dependencies complete ==="
         else
           echo "Installing full dependencies using MSYS2/MinGW..."
-          
-          # Install MSYS2
-          choco install msys2 --params "/InstallDir:C:\msys64"
-          
-          # Update MSYS2 and install base development tools
-          /c/msys64/usr/bin/bash -lc "pacman -Syu --noconfirm"
-          /c/msys64/usr/bin/bash -lc "pacman -S --noconfirm mingw-w64-x86_64-toolchain"
-          /c/msys64/usr/bin/bash -lc "pacman -S --noconfirm mingw-w64-x86_64-openssl"
-          /c/msys64/usr/bin/bash -lc "pacman -S --noconfirm mingw-w64-x86_64-icu"
-          /c/msys64/usr/bin/bash -lc "pacman -S --noconfirm mingw-w64-x86_64-lz4"
-          /c/msys64/usr/bin/bash -lc "pacman -S --noconfirm mingw-w64-x86_64-zstd"
-          /c/msys64/usr/bin/bash -lc "pacman -S --noconfirm mingw-w64-x86_64-libxml2"
-          /c/msys64/usr/bin/bash -lc "pacman -S --noconfirm mingw-w64-x86_64-llvm"
-          
-          # Install build dependencies
-          /c/msys64/usr/bin/bash -lc "pacman -S --noconfirm base-devel"
-          /c/msys64/usr/bin/bash -lc "pacman -S --noconfirm autotools"
-          /c/msys64/usr/bin/bash -lc "pacman -S --noconfirm bison flex"
-          
-          # Set up environment for MinGW64 builds
-          echo "MSYSTEM=MINGW64" >> $GITHUB_ENV
-          echo "/c/msys64/mingw64/bin" >> $GITHUB_PATH
-          echo "/c/msys64/usr/bin" >> $GITHUB_PATH
-          
           echo "=== MSYS2 full variant dependencies complete ==="
         fi
+
+    - name: Setup MSYS2 (Windows Full Variant)
+      if: runner.os == 'Windows' && matrix.variant == 'full'
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        update: true
+        install: >-
+          mingw-w64-x86_64-toolchain
+          mingw-w64-x86_64-openssl
+          mingw-w64-x86_64-icu
+          mingw-w64-x86_64-lz4
+          mingw-w64-x86_64-zstd
+          mingw-w64-x86_64-libxml2
+          mingw-w64-x86_64-llvm
+          base-devel
+          autotools
+          bison
+          flex
 
 
     - name: Get version from package.json
@@ -161,24 +156,12 @@ jobs:
 
     - name: Build PostgreSQL + pgvector (Windows)
       if: runner.os == 'Windows'
+      shell: ${{ matrix.variant == 'full' && 'msys2 {0}' || 'bash' }}
       run: |
-        # For full variant, use MSYS2/MinGW environment
-        if [ "${{ matrix.variant }}" = "full" ]; then
-          echo "Building Windows full variant with MSYS2/MinGW..."
-          /c/msys64/usr/bin/bash -lc "
-            export PLATFORM=${{ matrix.platform }} &&
-            export ARCH=${{ matrix.arch }} &&
-            export VARIANT=${{ matrix.variant }} &&
-            cd \$GITHUB_WORKSPACE &&
-            make build
-          "
-        else
-          echo "Building Windows lite variant..."
-          export PLATFORM=${{ matrix.platform }}
-          export ARCH=${{ matrix.arch }}
-          export VARIANT=${{ matrix.variant }}
-          make build
-        fi
+        export PLATFORM=${{ matrix.platform }}
+        export ARCH=${{ matrix.arch }}
+        export VARIANT=${{ matrix.variant }}
+        make build
 
     - name: Build PostgreSQL + pgvector (ARM64 with QEMU)
       if: runner.os == 'Linux' && matrix.arch == 'arm64'
@@ -206,24 +189,12 @@ jobs:
 
     - name: Test binaries functionality (Windows)
       if: runner.os == 'Windows'
+      shell: ${{ matrix.variant == 'full' && 'msys2 {0}' || 'bash' }}
       run: |
-        # For full variant, use MSYS2/MinGW environment
-        if [ "${{ matrix.variant }}" = "full" ]; then
-          echo "Testing Windows full variant with MSYS2/MinGW..."
-          /c/msys64/usr/bin/bash -lc "
-            export PLATFORM=${{ matrix.platform }} &&
-            export ARCH=${{ matrix.arch }} &&
-            export VARIANT=${{ matrix.variant }} &&
-            cd \$GITHUB_WORKSPACE &&
-            ./test-binaries.sh
-          "
-        else
-          echo "Testing Windows lite variant..."
-          export PLATFORM=${{ matrix.platform }}
-          export ARCH=${{ matrix.arch }}
-          export VARIANT=${{ matrix.variant }}
-          ./test-binaries.sh
-        fi
+        export PLATFORM=${{ matrix.platform }}
+        export ARCH=${{ matrix.arch }}
+        export VARIANT=${{ matrix.variant }}
+        ./test-binaries.sh
 
     - name: Test binaries functionality (ARM64 with QEMU)
       if: runner.os == 'Linux' && matrix.arch == 'arm64'
