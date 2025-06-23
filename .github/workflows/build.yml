@@ -154,9 +154,18 @@ jobs:
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "Building version: $VERSION"
 
-    - name: Build PostgreSQL + pgvector (Windows)
-      if: runner.os == 'Windows'
-      shell: "${{ matrix.variant == 'full' && 'msys2 {0}' || 'bash' }}"
+    - name: Build PostgreSQL + pgvector (Windows Lite)
+      if: runner.os == 'Windows' && matrix.variant == 'lite'
+      shell: bash
+      run: |
+        export PLATFORM=${{ matrix.platform }}
+        export ARCH=${{ matrix.arch }}
+        export VARIANT=${{ matrix.variant }}
+        make build
+
+    - name: Build PostgreSQL + pgvector (Windows Full)
+      if: runner.os == 'Windows' && matrix.variant == 'full'
+      shell: msys2 {0}
       run: |
         export PLATFORM=${{ matrix.platform }}
         export ARCH=${{ matrix.arch }}
@@ -187,9 +196,18 @@ jobs:
         export VARIANT=${{ matrix.variant }}
         make build
 
-    - name: Test binaries functionality (Windows)
-      if: runner.os == 'Windows'
-      shell: "${{ matrix.variant == 'full' && 'msys2 {0}' || 'bash' }}"
+    - name: Test binaries functionality (Windows Lite)
+      if: runner.os == 'Windows' && matrix.variant == 'lite'
+      shell: bash
+      run: |
+        export PLATFORM=${{ matrix.platform }}
+        export ARCH=${{ matrix.arch }}
+        export VARIANT=${{ matrix.variant }}
+        ./test-binaries.sh
+
+    - name: Test binaries functionality (Windows Full)
+      if: runner.os == 'Windows' && matrix.variant == 'full'
+      shell: msys2 {0}
       run: |
         export PLATFORM=${{ matrix.platform }}
         export ARCH=${{ matrix.arch }}
