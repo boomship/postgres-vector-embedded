@@ -95,11 +95,13 @@ patch:
 	@echo "🔧 Applying Windows LLVM compatibility patches..."
 ifeq ($(PLATFORM),win32)
 ifeq ($(VARIANT),full)
-	# Fix sys/mman.h issue in llvmjit_inline.cpp
-	sed -i '32i #ifdef _WIN32\n// Windows - no sys/mman.h needed\n#else' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit_inline.cpp
-	sed -i '35i #endif' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit_inline.cpp
-	# Fix bind macro conflict in llvmjit_wrap.cpp  
-	sed -i '15i #ifdef bind\n#undef bind\n#endif' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit_wrap.cpp
+	# Fix sys/mman.h issue in llvmjit_inline.cpp - wrap the include
+	sed -i '31a #ifdef _WIN32' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit_inline.cpp
+	sed -i '32a // Windows - no sys/mman.h needed' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit_inline.cpp
+	sed -i '33a #else' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit_inline.cpp
+	sed -i 's|#include <sys/mman.h>|#include <sys/mman.h>\n#endif|' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit_inline.cpp
+	# Fix bind macro conflict in llvmjit_wrap.cpp - add before any includes
+	sed -i '22a #ifdef bind\n#undef bind\n#endif' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit_wrap.cpp
 	# Fix rindex usage in llvmjit.c
 	sed -i 's/rindex(/strrchr(/g' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit.c
 endif
