@@ -6,24 +6,25 @@ set -e  # Exit on any error
 
 PLATFORM=${PLATFORM:-$(uname -s | tr '[:upper:]' '[:lower:]')}
 ARCH=${ARCH:-$(uname -m)}
+VARIANT=${VARIANT:-lite}
 if [ "$ARCH" = "x86_64" ]; then ARCH="x64"; fi
 if [ "$ARCH" = "aarch64" ]; then ARCH="arm64"; fi
 
-POSTGRES_DIR="dist/postgres-${PLATFORM}-${ARCH}"
+POSTGRES_DIR="postgres-dist/postgres-${VARIANT}-${PLATFORM}-${ARCH}"
 TEST_DIR="/tmp/pg-test-$$"  # Use PID to avoid conflicts
 TEST_PORT=$((5433 + RANDOM % 1000))  # Random port to avoid conflicts
 
-echo "🧪 Testing PostgreSQL + pgvector binaries for ${PLATFORM}-${ARCH}"
+echo "🧪 Testing PostgreSQL + pgvector binaries for ${VARIANT}-${PLATFORM}-${ARCH}"
 echo "   Using test directory: ${TEST_DIR}"
 echo "   Using test port: ${TEST_PORT}"
 
-# Debug: Check what's actually in the dist directory
-echo "📁 Contents of dist directory:"
-ls -la dist/ || echo "No dist directory found"
+# Debug: Check what's actually in the postgres-dist directory
+echo "📁 Contents of postgres-dist directory:"
+ls -la postgres-dist/ || echo "No postgres-dist directory found"
 
-if [ -d "dist/" ]; then
-    echo "📁 Contents of dist subdirectories:"
-    ls -la dist/*/
+if [ -d "postgres-dist/" ]; then
+    echo "📁 Contents of postgres-dist subdirectories:"
+    ls -la postgres-dist/*/
 fi
 
 # Check binaries exist

@@ -29,12 +29,17 @@ ifndef ARCH
     endif
 endif
 
+# Variant detection - lite or full
+ifndef VARIANT
+    VARIANT = lite
+endif
+
 # Directories
 BUILD_DIR = build
 DIST_DIR = postgres-dist
 POSTGRES_SRC = $(BUILD_DIR)/postgresql-$(POSTGRES_VERSION)
 PGVECTOR_SRC = $(BUILD_DIR)/pgvector-$(PGVECTOR_VERSION)
-INSTALL_DIR = $(DIST_DIR)/postgres-$(PLATFORM)-$(ARCH)
+INSTALL_DIR = $(DIST_DIR)/postgres-$(VARIANT)-$(PLATFORM)-$(ARCH)
 
 # URLs
 POSTGRES_URL = https://ftp.postgresql.org/pub/source/v$(POSTGRES_VERSION)/postgresql-$(POSTGRES_VERSION).tar.gz
@@ -43,17 +48,22 @@ PGVECTOR_URL = https://github.com/pgvector/pgvector/archive/v$(PGVECTOR_VERSION)
 # Build configuration
 PREFIX = $(CURDIR)/$(INSTALL_DIR)
 
-# Build configuration with OpenSSL and ICU support
-ifeq ($(PLATFORM),darwin)
-    BREW_PREFIX := $(shell brew --prefix)
-    ICU_PREFIX := $(BREW_PREFIX)/opt/icu4c
-    LLVM_PREFIX := $(BREW_PREFIX)/opt/llvm
-    CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --with-lz4 --with-zstd --with-libxml --with-llvm --with-uuid=e2fs --disable-nls CFLAGS="-Wno-unguarded-availability-new" --with-includes="$(BREW_PREFIX)/include:$(ICU_PREFIX)/include:$(LLVM_PREFIX)/include" --with-libraries="$(BREW_PREFIX)/lib:$(ICU_PREFIX)/lib:$(LLVM_PREFIX)/lib"
-else ifeq ($(PLATFORM),win32)
-    # Simplified Windows build - disable OpenSSL temporarily to get basic build working
+# Build configuration based on variant and platform
+ifeq ($(VARIANT),lite)
+    # Lite version: PostgreSQL + pgvector only (all platforms)
     CONFIGURE_FLAGS = --prefix=$(PREFIX) --disable-nls --without-openssl --without-icu --without-llvm --without-lz4 --without-zstd --without-libxml
-else
-    CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --with-lz4 --with-zstd --with-libxml --with-llvm --with-uuid=e2fs --disable-nls
+else ifeq ($(VARIANT),full)
+    # Full version: All enterprise features
+    ifeq ($(PLATFORM),darwin)
+        BREW_PREFIX := $(shell brew --prefix)
+        ICU_PREFIX := $(BREW_PREFIX)/opt/icu4c
+        LLVM_PREFIX := $(BREW_PREFIX)/opt/llvm
+        CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --with-lz4 --with-zstd --with-libxml --with-llvm --with-uuid=e2fs --disable-nls CFLAGS="-Wno-unguarded-availability-new" --with-includes="$(BREW_PREFIX)/include:$(ICU_PREFIX)/include:$(LLVM_PREFIX)/include" --with-libraries="$(BREW_PREFIX)/lib:$(ICU_PREFIX)/lib:$(LLVM_PREFIX)/lib"
+    else ifeq ($(PLATFORM),linux)
+        CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --with-lz4 --with-zstd --with-libxml --with-llvm --with-uuid=e2fs --disable-nls
+    else ifeq ($(PLATFORM),win32)
+        $(error Full variant not yet supported on Windows. Use VARIANT=lite)
+    endif
 endif
 
 .PHONY: all build clean download extract configure compile install package test
@@ -104,8 +114,8 @@ install:
 
 package:
 	@echo "📦 Creating distribution package..."
-	cd $(DIST_DIR) && tar -czf postgres-$(PLATFORM)-$(ARCH).tar.gz postgres-$(PLATFORM)-$(ARCH)/
-	@echo "✅ Built: $(DIST_DIR)/postgres-$(PLATFORM)-$(ARCH).tar.gz"
+	cd $(DIST_DIR) && tar -czf postgres-$(VARIANT)-$(PLATFORM)-$(ARCH).tar.gz postgres-$(VARIANT)-$(PLATFORM)-$(ARCH)/
+	@echo "✅ Built: $(DIST_DIR)/postgres-$(VARIANT)-$(PLATFORM)-$(ARCH).tar.gz"
 
 clean:
 	@echo "🧹 Cleaning build artifacts..."
@@ -113,6 +123,7 @@ clean:
 
 info:
 	@echo "Platform: $(PLATFORM)-$(ARCH)"
+	@echo "Variant: $(VARIANT)"
 	@echo "PostgreSQL: $(POSTGRES_VERSION)"
 	@echo "pgvector: $(PGVECTOR_VERSION)"
 	@echo "Install dir: $(INSTALL_DIR)"

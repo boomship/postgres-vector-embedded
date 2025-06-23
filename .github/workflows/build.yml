@@ -15,21 +15,44 @@ jobs:
       fail-fast: false  # Don't stop other builds if one fails
       matrix:
         include:
+          # Lite variants (all platforms)
           - os: macos-14
             platform: darwin
             arch: arm64
+            variant: lite
           - os: macos-13
             platform: darwin  
             arch: x64
+            variant: lite
           - os: ubuntu-latest
             platform: linux
             arch: x64
+            variant: lite
           - os: ubuntu-latest
             platform: linux
             arch: arm64
+            variant: lite
           - os: windows-latest
             platform: win32
             arch: x64
+            variant: lite
+          # Full variants (macOS and Linux only)
+          - os: macos-14
+            platform: darwin
+            arch: arm64
+            variant: full
+          - os: macos-13
+            platform: darwin  
+            arch: x64
+            variant: full
+          - os: ubuntu-latest
+            platform: linux
+            arch: x64
+            variant: full
+          - os: ubuntu-latest
+            platform: linux
+            arch: arm64
+            variant: full
 
     runs-on: ${{ matrix.os }}
     
@@ -107,6 +130,7 @@ jobs:
       run: |
         export PLATFORM=${{ matrix.platform }}
         export ARCH=${{ matrix.arch }}
+        export VARIANT=${{ matrix.variant }}
         make build
 
     - name: Build PostgreSQL + pgvector (ARM64 with QEMU)
@@ -120,6 +144,7 @@ jobs:
             apt-get install -y build-essential curl make bison flex zlib1g-dev libreadline-dev libssl-dev libicu-dev liblz4-dev libzstd-dev libxml2-dev llvm-dev uuid-dev clang pkg-config &&
             export PLATFORM=${{ matrix.platform }} &&
             export ARCH=${{ matrix.arch }} &&
+            export VARIANT=${{ matrix.variant }} &&
             make build
           "
 
@@ -129,6 +154,7 @@ jobs:
       run: |
         export PLATFORM=${{ matrix.platform }}
         export ARCH=${{ matrix.arch }}
+        export VARIANT=${{ matrix.variant }}
         make build
 
     - name: Test binaries functionality (Windows)
@@ -136,6 +162,7 @@ jobs:
       run: |
         export PLATFORM=${{ matrix.platform }}
         export ARCH=${{ matrix.arch }}
+        export VARIANT=${{ matrix.variant }}
         ./test-binaries.sh
 
     - name: Test binaries functionality (ARM64 with QEMU)
@@ -152,6 +179,7 @@ jobs:
             su testuser -c '
               export PLATFORM=${{ matrix.platform }} &&
               export ARCH=${{ matrix.arch }} &&
+              export VARIANT=${{ matrix.variant }} &&
               ./test-binaries.sh
             '
           "
@@ -162,13 +190,14 @@ jobs:
       run: |
         export PLATFORM=${{ matrix.platform }}
         export ARCH=${{ matrix.arch }}
+        export VARIANT=${{ matrix.variant }}
         ./test-binaries.sh
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: postgres-${{ matrix.platform }}-${{ matrix.arch }}
-        path: dist/postgres-${{ matrix.platform }}-${{ matrix.arch }}.tar.gz
+        name: postgres-${{ matrix.variant }}-${{ matrix.platform }}-${{ matrix.arch }}
+        path: postgres-dist/postgres-${{ matrix.variant }}-${{ matrix.platform }}-${{ matrix.arch }}.tar.gz
 
   release:
     needs: build
@@ -195,13 +224,19 @@ jobs:
         find artifacts -name "*.tar.gz" -exec cp {} release-assets/ \;
         ls -la release-assets/
         
-        # Check we have all expected platforms
+        # Check we have all expected platforms and variants
         expected_files=(
-          "postgres-darwin-arm64.tar.gz"
-          "postgres-darwin-x64.tar.gz" 
-          "postgres-linux-x64.tar.gz"
-          "postgres-linux-arm64.tar.gz"
-          "postgres-win32-x64.tar.gz"
+          # Lite variants (all platforms)
+          "postgres-lite-darwin-arm64.tar.gz"
+          "postgres-lite-darwin-x64.tar.gz" 
+          "postgres-lite-linux-x64.tar.gz"
+          "postgres-lite-linux-arm64.tar.gz"
+          "postgres-lite-win32-x64.tar.gz"
+          # Full variants (macOS and Linux only)
+          "postgres-full-darwin-arm64.tar.gz"
+          "postgres-full-darwin-x64.tar.gz" 
+          "postgres-full-linux-x64.tar.gz"
+          "postgres-full-linux-arm64.tar.gz"
         )
         
         missing_files=()
