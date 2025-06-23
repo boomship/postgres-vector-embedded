@@ -156,7 +156,7 @@ jobs:
 
     - name: Build PostgreSQL + pgvector (Windows)
       if: runner.os == 'Windows'
-      shell: ${{ matrix.variant == 'full' && 'msys2 {0}' || 'bash' }}
+      shell: "${{ matrix.variant == 'full' && 'msys2 {0}' || 'bash' }}"
       run: |
         export PLATFORM=${{ matrix.platform }}
         export ARCH=${{ matrix.arch }}
@@ -189,7 +189,7 @@ jobs:
 
     - name: Test binaries functionality (Windows)
       if: runner.os == 'Windows'
-      shell: ${{ matrix.variant == 'full' && 'msys2 {0}' || 'bash' }}
+      shell: "${{ matrix.variant == 'full' && 'msys2 {0}' || 'bash' }}"
       run: |
         export PLATFORM=${{ matrix.platform }}
         export ARCH=${{ matrix.arch }}
