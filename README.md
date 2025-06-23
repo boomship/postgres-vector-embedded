@@ -17,8 +17,8 @@ An embedded PostgreSQL + pgvector solution for Node.js applications:
 
 - **PostgreSQL 17.5** — latest stable database engine  
 - **pgvector 0.8.0** — enables vector similarity search with HNSW indexing
-- **Cross-platform binaries** — 5-platform coverage including ARM64
-- **Advanced capabilities** — SSL/TLS, compression, XML support, JIT compilation *(macOS, Linux)*
+- **Dual variants** — lite (basic) and full (enterprise) builds available
+- **Advanced capabilities** — SSL/TLS, compression, XML support, JIT compilation
 - **No manual setup** — precompiled binaries ready to run
 - **TypeScript API** — example code to get started quickly
 
@@ -36,23 +36,33 @@ npm install @boomship/postgres-vector-embedded
 
 ## Platform Support
 
+### Lite Variant (Basic PostgreSQL + pgvector)
+| Platform | Architecture | Status |
+|----------|-------------|---------|
+| macOS    | ARM64 (M1+) | ✅ Supported |
+| macOS    | x64 (Intel) | ✅ Supported |
+| Linux    | x64         | ✅ Supported |
+| Linux    | ARM64       | ✅ Supported |
+| Windows  | x64         | ✅ Supported |
+
+### Full Variant (Enterprise Features)
 | Platform | Architecture | Status | Features |
 |----------|-------------|---------|----------|
-| macOS    | ARM64 (M1+) | ✅ Supported | Full (SSL, ICU, LZ4, ZSTD, XML, LLVM, UUID) |
-| macOS    | x64 (Intel) | ✅ Supported | Full (SSL, ICU, LZ4, ZSTD, XML, LLVM, UUID) |
-| Linux    | x64         | ✅ Supported | Full (SSL, ICU, LZ4, ZSTD, XML, LLVM, UUID) |
-| Linux    | ARM64       | ✅ Supported | Full (SSL, ICU, LZ4, ZSTD, XML, LLVM, UUID) |
+| macOS    | ARM64 (M1+) | ✅ Supported | SSL, ICU, LZ4, ZSTD, XML, LLVM, UUID |
+| macOS    | x64 (Intel) | ✅ Supported | SSL, ICU, LZ4, ZSTD, XML, LLVM, UUID |
+| Linux    | x64         | ✅ Supported | SSL, ICU, LZ4, ZSTD, XML, LLVM, UUID |
+| Linux    | ARM64       | ✅ Supported | SSL, ICU, LZ4, ZSTD, XML, LLVM, UUID |
 | Windows  | x64         | ⚠️ Limited | Basic (PostgreSQL + pgvector only) |
 
-> **Windows Status**: Currently experiencing build issues with advanced features. The Windows build provides basic PostgreSQL + pgvector functionality but lacks SSL encryption, compression, XML support, and other enterprise features. We're working to restore full feature parity in future releases.
+> **Windows Full Variant**: Currently in development. Windows lite variant provides basic PostgreSQL + pgvector functionality. Full variant with enterprise features coming in v1.0.
 
 ### Basic Usage
 
 ```typescript
 import { downloadBinaries, PostgresServer } from '@boomship/postgres-vector-embedded';
 
-// Download platform-specific binaries
-await downloadBinaries();
+// Download platform-specific binaries (choose variant)
+await downloadBinaries({ variant: 'full' }); // or 'lite'
 
 // Start embedded PostgreSQL server
 const server = new PostgresServer({
@@ -63,7 +73,7 @@ const server = new PostgresServer({
 await server.start();
 
 // Use with your favorite PostgreSQL client
-// The server includes pgvector extension ready to use
+// Full variant includes SSL, compression, and enterprise features (macOS/Linux)
 
 await server.stop();
 ```
@@ -141,6 +151,7 @@ interface DownloadOptions {
   version?: string;           // Default: latest
   platform?: PlatformType;   // Auto-detected
   architecture?: ArchType;   // Auto-detected  
+  variant?: Variant;          // 'lite' | 'full' (default: 'lite')
   downloadDir?: string;       // Default: './postgres-binaries'
 }
 ```
@@ -172,20 +183,24 @@ interface PostgresServerOptions {
 
 Existing solutions are incomplete - they're either client libraries that require existing PostgreSQL installations, PostgreSQL-only packages without pgvector, or solutions with older versions.
 
-This package provides **an embedded solution** with PostgreSQL 17.5 and pgvector 0.8.0, with feature sets varying by platform.
+This package provides **a complete embedded solution** with PostgreSQL 17.5 and pgvector 0.8.0, offering both lite and full enterprise variants.
 
 ## Advanced Capabilities
 
-Available features vary by platform:
+The full variant includes enterprise-grade features:
 
-- **Security** — Full SSL/TLS encryption support *(macOS, Linux)*
-- **Performance** — LLVM JIT compilation for complex queries *(macOS, Linux)*
-- **Compression** — LZ4 and Zstandard algorithms for efficient storage *(macOS, Linux)*
-- **Data Types** — Complete XML support and UUID generation *(macOS, Linux)*
-- **Internationalization** — Full Unicode and collation support via ICU *(macOS, Linux)*
-- **Vector Search** — pgvector with HNSW indexing for similarity search *(all platforms)*
+- **Security** — Complete SSL/TLS encryption support for secure connections *(macOS, Linux)*
+- **Performance** — LLVM JIT compilation for accelerated complex queries *(macOS, Linux)*
+- **Compression** — LZ4 and Zstandard algorithms for optimal storage efficiency *(macOS, Linux)*
+- **Data Types** — Full XML processing and UUID generation capabilities *(macOS, Linux)*
+- **Internationalization** — Complete Unicode and collation support via ICU *(macOS, Linux)*
+- **Vector Search** — pgvector with HNSW indexing for high-performance similarity search *(all platforms)*
 
-> **Note**: Windows builds currently include only core PostgreSQL + pgvector functionality. Advanced features are available on macOS and Linux platforms. We're actively working to restore full Windows feature support in upcoming releases.
+**Choose Your Variant:**
+- **Lite** — Core PostgreSQL + pgvector (smaller footprint, faster startup)
+- **Full** — All enterprise features enabled (production-ready with advanced capabilities)
+
+> Full variant enterprise features are currently available on macOS and Linux. Windows full variant with complete feature parity is coming in v1.0.
 
 
 ## 🤝 Curated Release
