@@ -121,11 +121,8 @@ jobs:
         else
           echo "Installing full dependencies for enterprise variant..."
           
-          # Install vcpkg for library management (clean install)
-          if [ -d "C:/vcpkg" ]; then rm -rf C:/vcpkg; fi
-          git clone https://github.com/Microsoft/vcpkg.git C:/vcpkg
-          cd C:/vcpkg
-          ./bootstrap-vcpkg.bat
+          # Use pre-installed vcpkg on GitHub Actions
+          cd $VCPKG_INSTALLATION_ROOT
           ./vcpkg integrate install
           
           # Install all enterprise libraries
@@ -154,8 +151,8 @@ jobs:
           # Add paths
           toolsPath="/c/ProgramData/chocolatey/lib/winflexbison3/tools"
           echo "$toolsPath" >> $GITHUB_PATH
-          echo "C:/vcpkg/installed/x64-windows-static/bin" >> $GITHUB_PATH
-          echo "C:/vcpkg/installed/x64-windows-static/tools" >> $GITHUB_PATH
+          echo "$VCPKG_INSTALLATION_ROOT/installed/x64-windows-static/bin" >> $GITHUB_PATH
+          echo "$VCPKG_INSTALLATION_ROOT/installed/x64-windows-static/tools" >> $GITHUB_PATH
           
           # Create symlinks for bison/flex
           if [ -f "$toolsPath/win_bison.exe" ]; then
@@ -166,8 +163,8 @@ jobs:
           fi
           
           # Set environment variables for PostgreSQL configure
-          echo "PKG_CONFIG_PATH=C:/vcpkg/installed/x64-windows-static/lib/pkgconfig" >> $GITHUB_ENV
-          echo "CMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=$VCPKG_INSTALLATION_ROOT/installed/x64-windows-static/lib/pkgconfig" >> $GITHUB_ENV
+          echo "CMAKE_TOOLCHAIN_FILE=$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" >> $GITHUB_ENV
           echo "VCPKG_TARGET_TRIPLET=x64-windows-static" >> $GITHUB_ENV
           
           echo "=== Full variant dependencies complete ==="

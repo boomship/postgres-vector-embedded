@@ -63,7 +63,7 @@ else ifeq ($(VARIANT),full)
         CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --with-lz4 --with-zstd --with-libxml --with-llvm --with-uuid=e2fs --disable-nls
     else ifeq ($(PLATFORM),win32)
         # Windows full build with OpenSSL and enterprise features via vcpkg
-        VCPKG_ROOT := C:/vcpkg/installed/x64-windows-static
+        VCPKG_ROOT := $(VCPKG_INSTALLATION_ROOT)/installed/x64-windows-static
         CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --with-lz4 --with-zstd --with-libxml --with-llvm --with-uuid=e2fs --disable-nls --with-includes="$(VCPKG_ROOT)/include" --with-libraries="$(VCPKG_ROOT)/lib" CPPFLAGS="-I$(VCPKG_ROOT)/include" LDFLAGS="-L$(VCPKG_ROOT)/lib"
     endif
 endif
