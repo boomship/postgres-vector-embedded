@@ -6,8 +6,8 @@ yarn-debug.log*
 yarn-error.log*
 
 # Build outputs
-dist/
 build/
+postgres-dist/
 *.tgz
 
 # Runtime data
