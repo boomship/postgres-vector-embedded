@@ -64,7 +64,7 @@ else ifeq ($(VARIANT),full)
     else ifeq ($(PLATFORM),win32)
         # Windows full build with OpenSSL and enterprise features via MSYS2/MinGW
         MINGW_PREFIX := /mingw64
-        CONFIGURE_FLAGS = --host=x86_64-w64-mingw32 --prefix=$(PREFIX) --with-openssl --with-icu --with-lz4 --with-zstd --with-libxml --with-llvm --without-uuid --disable-nls --with-includes="$(MINGW_PREFIX)/include" --with-libraries="$(MINGW_PREFIX)/lib"
+        CONFIGURE_FLAGS = --host=x86_64-w64-mingw32 --prefix=$(PREFIX) --with-openssl --with-icu --with-lz4 --with-zstd --with-libxml --with-llvm --with-uuid=e2fs --disable-nls --with-includes="$(MINGW_PREFIX)/include" --with-libraries="$(MINGW_PREFIX)/lib"
     endif
 endif
 
