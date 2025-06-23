@@ -5,19 +5,19 @@
  */
 
 export { downloadBinaries } from './download.js';
-export { PostgresServer } from './server.js';
 export {
   detectPlatform,
-  validatePlatformArch,
   getBinaryFilename,
   getDownloadUrl,
+  validatePlatformArch,
 } from './platform.js';
+export { PostgresServer } from './server.js';
 
 export type {
-  Platform,
   Architecture,
   DownloadOptions,
-  PlatformInfo,
   DownloadProgress,
+  Platform,
+  PlatformInfo,
   PostgresServerOptions,
 } from './types.js';

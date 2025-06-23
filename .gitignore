@@ -112,6 +112,8 @@ postgres-binaries/
 # Test artifacts
 test-results/
 coverage/
+tests/downloads/
+tests/temp/
 
 # Claude IDE files
 .claude/

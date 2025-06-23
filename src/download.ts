@@ -16,6 +16,7 @@ export async function downloadBinaries(options: DownloadOptions): Promise<void> 
     targetDir,
     platform: requestedPlatform,
     arch: requestedArch,
+    variant = 'lite',
     version = await getPackageVersion(),
     repository = 'boomship/postgres-vector-embedded',
     force = false,
@@ -27,9 +28,9 @@ export async function downloadBinaries(options: DownloadOptions): Promise<void> 
       ? { platform: requestedPlatform, arch: requestedArch }
       : detectPlatform();
 
-  validatePlatformArch(platform, arch);
+  validatePlatformArch(platform, arch, variant);
 
-  console.log(`📦 Downloading PostgreSQL + pgvector binaries for ${platform}-${arch}`);
+  console.log(`📦 Downloading PostgreSQL + pgvector binaries for ${variant}-${platform}-${arch}`);
 
   // Check if binaries already exist
   const binariesPath = join(targetDir, 'bin', 'postgres');
@@ -42,7 +43,7 @@ export async function downloadBinaries(options: DownloadOptions): Promise<void> 
   await mkdir(targetDir, { recursive: true });
 
   // Download and extract
-  const downloadUrl = getDownloadUrl(repository, version, platform, arch);
+  const downloadUrl = getDownloadUrl(repository, version, platform, arch, variant);
   console.log(`🌐 Downloading from: ${downloadUrl}`);
 
   try {
@@ -98,32 +99,54 @@ async function downloadAndExtract(url: string, targetDir: string): Promise<void>
  * Verify that critical PostgreSQL files were installed correctly
  */
 async function verifyInstallation(targetDir: string): Promise<void> {
-  const criticalFiles = [
-    'bin/postgres',
-    'bin/pg_ctl',
-    'bin/initdb',
-    'bin/psql',
-    'lib/postgresql/vector.so', // pgvector extension (Linux/macOS)
+  // Critical PostgreSQL binaries
+  const criticalFiles = ['bin/postgres', 'bin/pg_ctl', 'bin/initdb', 'bin/psql'];
+
+  // Check for pgvector extension (our builds place it directly in lib/)
+  const vectorLibPaths = [
+    'lib/vector.so', // Linux
+    'lib/vector.dylib', // macOS
+    'lib/vector.dll', // Windows
   ];
 
+  // Verify critical binaries exist (try both Unix and Windows paths)
   for (const file of criticalFiles) {
-    const filePath = join(targetDir, file);
+    const unixPath = join(targetDir, file);
+    const windowsPath = join(targetDir, `${file}.exe`);
+
+    let found = false;
     try {
-      await access(filePath);
+      await access(unixPath);
+      found = true;
     } catch {
-      // For Windows, .so files will be .dll
-      if (file.endsWith('.so')) {
-        const windowsFile = file.replace('.so', '.dll');
-        const windowsPath = join(targetDir, windowsFile);
-        try {
-          await access(windowsPath);
-          continue;
-        } catch {
-          // Fall through to error
-        }
+      try {
+        await access(windowsPath);
+        found = true;
+      } catch {
+        // Neither path exists
       }
-      throw new Error(`Critical file missing: ${file}`);
     }
+
+    if (!found) {
+      throw new Error(`Critical file missing: ${file} (checked both Unix and Windows paths)`);
+    }
+  }
+
+  // Check for pgvector library (try multiple possible locations)
+  let vectorFound = false;
+  for (const vectorPath of vectorLibPaths) {
+    try {
+      await access(join(targetDir, vectorPath));
+      vectorFound = true;
+      console.log(`✅ Found pgvector at: ${vectorPath}`);
+      break;
+    } catch {
+      // Continue checking other paths
+    }
+  }
+
+  if (!vectorFound) {
+    throw new Error(`pgvector extension not found. Checked: ${vectorLibPaths.join(', ')}`);
   }
 }
 
@@ -142,7 +165,7 @@ async function getPackageVersion(): Promise<string> {
     const packageJson = await import(packageJsonPath, { with: { type: 'json' } });
     return packageJson.default.version;
   } catch {
-    // Fallback version if package.json can't be read
-    return '0.1.0';
+    // Fallback version if package.json can't be read (should match current package.json)
+    return '0.2.1';
   }
 }

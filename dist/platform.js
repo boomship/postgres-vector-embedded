@@ -38,9 +38,9 @@ export function detectPlatform() {
     };
 }
 /**
- * Validate platform and architecture combination
+ * Validate platform, architecture, and variant combination
  */
-export function validatePlatformArch(platform, arch) {
+export function validatePlatformArch(platform, arch, variant = 'lite') {
     const validCombinations = [
         ['darwin', 'x64'],
         ['darwin', 'arm64'],
@@ -52,19 +52,23 @@ export function validatePlatformArch(platform, arch) {
     if (!isValid) {
         throw new Error(`Unsupported platform/architecture combination: ${platform}-${arch}`);
     }
+    // Check variant-specific restrictions
+    if (variant === 'full' && platform === 'win32') {
+        throw new Error(`Full variant is not available on Windows. Use 'lite' variant instead.`);
+    }
 }
 /**
- * Generate the binary filename for a given platform and architecture
+ * Generate the binary filename for a given platform, architecture, and variant
  */
-export function getBinaryFilename(platform, arch) {
-    validatePlatformArch(platform, arch);
-    return `postgres-${platform}-${arch}.tar.gz`;
+export function getBinaryFilename(platform, arch, variant = 'lite') {
+    validatePlatformArch(platform, arch, variant);
+    return `postgres-${variant}-${platform}-${arch}.tar.gz`;
 }
 /**
  * Get the download URL for binaries from GitHub Releases
  */
-export function getDownloadUrl(repository, version, platform, arch) {
-    const filename = getBinaryFilename(platform, arch);
+export function getDownloadUrl(repository, version, platform, arch, variant = 'lite') {
+    const filename = getBinaryFilename(platform, arch, variant);
     const tagVersion = version.startsWith('v') ? version : `v${version}`;
     return `https://github.com/${repository}/releases/download/${tagVersion}/${filename}`;
 }

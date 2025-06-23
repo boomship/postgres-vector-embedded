@@ -17,7 +17,7 @@ An embedded PostgreSQL + pgvector solution for Node.js applications:
 
 - **PostgreSQL 17.5** — latest stable database engine  
 - **pgvector 0.8.0** — enables vector similarity search with HNSW indexing
-- **Dual variants** — lite (basic) and full (enterprise) builds available
+- **Dual variants** — lite (basic) and full (with SSL, compression, XML) builds available
 - **Advanced capabilities** — SSL/TLS, compression, XML support, JIT compilation
 - **No manual setup** — precompiled binaries ready to run
 - **TypeScript API** — example code to get started quickly
@@ -45,7 +45,7 @@ npm install @boomship/postgres-vector-embedded
 | Linux    | ARM64       | ✅ Supported |
 | Windows  | x64         | ✅ Supported |
 
-### Full Variant (Enterprise Features)
+### Full Variant (Additional Features)
 | Platform | Architecture | Status | Features |
 |----------|-------------|---------|----------|
 | macOS    | ARM64 (M1+) | ✅ Supported | SSL, ICU, LZ4, ZSTD, XML, LLVM, UUID |
@@ -54,7 +54,7 @@ npm install @boomship/postgres-vector-embedded
 | Linux    | ARM64       | ✅ Supported | SSL, ICU, LZ4, ZSTD, XML, LLVM, UUID |
 | Windows  | x64         | ❌ Unsupported | Not available |
 
-> **Windows Full Variant**: Not available in current release. Use lite variant on Windows. Full variant with enterprise features coming in v1.0.
+> **Windows Full Variant**: Not available in current release. Use lite variant on Windows. Full variant with additional PostgreSQL features coming in v1.0.
 
 ### Basic Usage
 
@@ -73,7 +73,7 @@ const server = new PostgresServer({
 await server.start();
 
 // Use with your favorite PostgreSQL client
-// Full variant includes SSL, compression, and enterprise features (macOS/Linux)
+// Full variant includes SSL, compression, and additional PostgreSQL features (macOS/Linux)
 
 await server.stop();
 ```
@@ -183,11 +183,11 @@ interface PostgresServerOptions {
 
 Existing solutions are incomplete - they're either client libraries that require existing PostgreSQL installations, PostgreSQL-only packages without pgvector, or solutions with older versions.
 
-This package provides **a complete embedded solution** with PostgreSQL 17.5 and pgvector 0.8.0, offering both lite and full enterprise variants.
+This package provides **a complete embedded solution** with PostgreSQL 17.5 and pgvector 0.8.0, offering both lite and full variants.
 
 ## Advanced Capabilities
 
-The full variant includes enterprise-grade features:
+The full variant includes additional PostgreSQL features:
 
 - **Security** — Complete SSL/TLS encryption support for secure connections *(macOS, Linux)*
 - **Performance** — LLVM JIT compilation for accelerated complex queries *(macOS, Linux)*
@@ -198,9 +198,9 @@ The full variant includes enterprise-grade features:
 
 **Choose Your Variant:**
 - **Lite** — Core PostgreSQL + pgvector (smaller footprint, faster startup)
-- **Full** — All enterprise features enabled (production-ready with advanced capabilities)
+- **Full** — Additional PostgreSQL features enabled (SSL, compression, XML, JIT compilation)
 
-> Full variant enterprise features are currently available on macOS and Linux. Windows full variant with complete feature parity is coming in v1.0.
+> Full variant features are currently available on macOS and Linux. Windows full variant is coming in v1.0.
 
 
 ## 🤝 Curated Release

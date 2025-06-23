@@ -1,5 +1,5 @@
 import { arch, platform } from 'node:os';
-import type { Architecture, Platform, PlatformInfo } from './types.js';
+import type { Architecture, Platform, PlatformInfo, Variant } from './types.js';
 
 /**
  * Detect the current platform and architecture
@@ -44,9 +44,13 @@ export function detectPlatform(): PlatformInfo {
 }
 
 /**
- * Validate platform and architecture combination
+ * Validate platform, architecture, and variant combination
  */
-export function validatePlatformArch(platform: Platform, arch: Architecture): void {
+export function validatePlatformArch(
+  platform: Platform,
+  arch: Architecture,
+  variant: Variant = 'lite'
+): void {
   const validCombinations: [Platform, Architecture][] = [
     ['darwin', 'x64'],
     ['darwin', 'arm64'],
@@ -59,14 +63,23 @@ export function validatePlatformArch(platform: Platform, arch: Architecture): vo
   if (!isValid) {
     throw new Error(`Unsupported platform/architecture combination: ${platform}-${arch}`);
   }
+
+  // Check variant-specific restrictions
+  if (variant === 'full' && platform === 'win32') {
+    throw new Error(`Full variant is not available on Windows. Use 'lite' variant instead.`);
+  }
 }
 
 /**
- * Generate the binary filename for a given platform and architecture
+ * Generate the binary filename for a given platform, architecture, and variant
  */
-export function getBinaryFilename(platform: Platform, arch: Architecture): string {
-  validatePlatformArch(platform, arch);
-  return `postgres-${platform}-${arch}.tar.gz`;
+export function getBinaryFilename(
+  platform: Platform,
+  arch: Architecture,
+  variant: Variant = 'lite'
+): string {
+  validatePlatformArch(platform, arch, variant);
+  return `postgres-${variant}-${platform}-${arch}.tar.gz`;
 }
 
 /**
@@ -76,9 +89,10 @@ export function getDownloadUrl(
   repository: string,
   version: string,
   platform: Platform,
-  arch: Architecture
+  arch: Architecture,
+  variant: Variant = 'lite'
 ): string {
-  const filename = getBinaryFilename(platform, arch);
+  const filename = getBinaryFilename(platform, arch, variant);
   const tagVersion = version.startsWith('v') ? version : `v${version}`;
   return `https://github.com/${repository}/releases/download/${tagVersion}/${filename}`;
 }

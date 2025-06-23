@@ -162,7 +162,7 @@ export class PostgresServer {
                         env: {
                             ...globalThis.process.env,
                             PGPASSWORD: this.password,
-                            DYLD_LIBRARY_PATH: join(this.binariesDir, 'lib')
+                            DYLD_LIBRARY_PATH: join(this.binariesDir, 'lib'),
                         },
                     });
                     psql.on('close', (code) => {
@@ -207,7 +207,7 @@ export class PostgresServer {
                 env: {
                     ...globalThis.process.env,
                     PGPASSWORD: this.password,
-                    DYLD_LIBRARY_PATH: join(this.binariesDir, 'lib')
+                    DYLD_LIBRARY_PATH: join(this.binariesDir, 'lib'),
                 },
             });
             psql.on('close', (code) => {

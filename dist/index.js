@@ -4,6 +4,6 @@
  * Embedded PostgreSQL with pgvector extension for Node.js applications
  */
 export { downloadBinaries } from './download.js';
+export { detectPlatform, getBinaryFilename, getDownloadUrl, validatePlatformArch, } from './platform.js';
 export { PostgresServer } from './server.js';
-export { detectPlatform, validatePlatformArch, getBinaryFilename, getDownloadUrl, } from './platform.js';
 //# sourceMappingURL=index.js.map

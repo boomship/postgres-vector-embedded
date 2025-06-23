@@ -194,10 +194,10 @@ export class PostgresServer {
             ],
             {
               stdio: 'ignore',
-              env: { 
-                ...globalThis.process.env, 
+              env: {
+                ...globalThis.process.env,
                 PGPASSWORD: this.password,
-                DYLD_LIBRARY_PATH: join(this.binariesDir, 'lib')
+                DYLD_LIBRARY_PATH: join(this.binariesDir, 'lib'),
               },
             }
           );
@@ -248,10 +248,10 @@ export class PostgresServer {
         ],
         {
           stdio: 'inherit',
-          env: { 
-            ...globalThis.process.env, 
+          env: {
+            ...globalThis.process.env,
             PGPASSWORD: this.password,
-            DYLD_LIBRARY_PATH: join(this.binariesDir, 'lib')
+            DYLD_LIBRARY_PATH: join(this.binariesDir, 'lib'),
           },
         }
       );

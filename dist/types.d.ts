@@ -1,5 +1,6 @@
 export type Platform = 'darwin' | 'linux' | 'win32';
 export type Architecture = 'x64' | 'arm64';
+export type Variant = 'lite' | 'full';
 export interface DownloadOptions {
     /** Target directory to extract PostgreSQL binaries */
     targetDir: string;
@@ -7,6 +8,8 @@ export interface DownloadOptions {
     platform?: Platform;
     /** Architecture to download for (auto-detected if not specified) */
     arch?: Architecture;
+    /** Variant to download: 'lite' (basic) or 'full' (with SSL, compression, XML, etc.) */
+    variant?: Variant;
     /** Package version to download (uses package.json version if not specified) */
     version?: string;
     /** GitHub repository owner/name */
