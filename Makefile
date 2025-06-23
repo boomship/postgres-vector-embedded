@@ -105,6 +105,26 @@ ifeq ($(VARIANT),full)
 	sed -i '/^#include "postgres.h"/a #ifdef bind\n#undef bind\n#endif' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit_wrap.cpp
 	# Fix rindex usage in llvmjit.c
 	sed -i 's/rindex(/strrchr(/g' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit.c
+	# Fix Windows LLVM linking issues in Makefile.shlib
+	sed -i 's/SHLIB_LINK.*=/& -lstdc++ -lgcc_s -lwinpthread/' $(POSTGRES_SRC)/src/Makefile.shlib
+	# Fix LLVM JIT Makefile for Windows linking
+	sed -i '/^SHLIB_LINK/s/$$/ -lstdc++ -lgcc_s -lwinpthread/' $(POSTGRES_SRC)/src/backend/jit/llvm/Makefile
+	# Add missing exports to win32 def file if it exists
+	@if [ -f "$(POSTGRES_SRC)/src/backend/postgres.def" ]; then \
+		echo "CurrentResourceOwner" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "pkglib_path" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "CurrentMemoryContext" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "TopMemoryContext" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "MyProcPid" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "jit_dump_bitcode" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "proc_exit_inprogress" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "jit_profiling_support" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "jit_debugging_support" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "TTSOpsMinimalTuple" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "TTSOpsHeapTuple" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "TTSOpsBufferHeapTuple" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "TTSOpsVirtual" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+	fi
 endif
 endif
 
