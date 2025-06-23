@@ -64,15 +64,15 @@ else ifeq ($(VARIANT),full)
     else ifeq ($(PLATFORM),win32)
         # Windows full build with OpenSSL and enterprise features via MSYS2/MinGW
         MINGW_PREFIX := /mingw64
-        CONFIGURE_FLAGS = --host=x86_64-w64-mingw32 --prefix=$(PREFIX) --with-openssl --with-icu --with-lz4 --with-zstd --with-libxml --without-llvm --disable-nls --with-includes="$(MINGW_PREFIX)/include" --with-libraries="$(MINGW_PREFIX)/lib"
+        CONFIGURE_FLAGS = --host=x86_64-w64-mingw32 --prefix=$(PREFIX) --with-openssl --with-icu --with-lz4 --with-zstd --with-libxml --with-llvm --disable-nls --with-includes="$(MINGW_PREFIX)/include" --with-libraries="$(MINGW_PREFIX)/lib"
     endif
 endif
 
-.PHONY: all build clean download extract configure compile install package test
+.PHONY: all build clean download extract patch configure compile install package test
 
 all: build
 
-build: download extract configure compile install package
+build: download extract patch configure compile install package
 
 test: build
 	@echo "🧪 Testing built binaries..."
@@ -90,6 +90,20 @@ extract:
 	cd $(BUILD_DIR) && \
 		tar -xzf postgresql-$(POSTGRES_VERSION).tar.gz && \
 		tar -xzf pgvector-$(PGVECTOR_VERSION).tar.gz
+
+patch:
+	@echo "🔧 Applying Windows LLVM compatibility patches..."
+ifeq ($(PLATFORM),win32)
+ifeq ($(VARIANT),full)
+	# Fix sys/mman.h issue in llvmjit_inline.cpp
+	sed -i '32i #ifdef _WIN32\n// Windows - no sys/mman.h needed\n#else' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit_inline.cpp
+	sed -i '35i #endif' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit_inline.cpp
+	# Fix bind macro conflict in llvmjit_wrap.cpp  
+	sed -i '15i #ifdef bind\n#undef bind\n#endif' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit_wrap.cpp
+	# Fix rindex usage in llvmjit.c
+	sed -i 's/rindex(/strrchr(/g' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit.c
+endif
+endif
 
 configure:
 	@echo "⚙️  Configuring PostgreSQL build..."
