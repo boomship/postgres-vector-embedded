@@ -53,6 +53,11 @@ jobs:
             platform: linux
             arch: arm64
             variant: full
+          # Windows full variant (experimental)
+          - os: windows-latest
+            platform: win32
+            arch: x64
+            variant: full
 
     runs-on: ${{ matrix.os }}
     
@@ -95,23 +100,77 @@ jobs:
       run: |
         echo "=== Windows dependency installation starting ==="
         
-        # Install only essential build tools - no OpenSSL for now
-        echo "Installing winflexbison3..."
-        choco install winflexbison3
-        
-        # Add bison/flex to PATH
-        toolsPath="/c/ProgramData/chocolatey/lib/winflexbison3/tools"
-        echo "$toolsPath" >> $GITHUB_PATH
-        
-        # Create symlinks if needed
-        if [ -f "$toolsPath/win_bison.exe" ]; then
-          ln -s "$toolsPath/win_bison.exe" "$toolsPath/bison.exe"
+        # For lite variant, minimal build tools only
+        if [ "${{ matrix.variant }}" = "lite" ]; then
+          echo "Installing minimal dependencies for lite variant..."
+          choco install winflexbison3
+          
+          # Add bison/flex to PATH
+          toolsPath="/c/ProgramData/chocolatey/lib/winflexbison3/tools"
+          echo "$toolsPath" >> $GITHUB_PATH
+          
+          # Create symlinks if needed
+          if [ -f "$toolsPath/win_bison.exe" ]; then
+            ln -s "$toolsPath/win_bison.exe" "$toolsPath/bison.exe"
+          fi
+          if [ -f "$toolsPath/win_flex.exe" ]; then
+            ln -s "$toolsPath/win_flex.exe" "$toolsPath/flex.exe"
+          fi
+          
+          echo "=== Lite variant dependencies complete ==="
+        else
+          echo "Installing full dependencies for enterprise variant..."
+          
+          # Install vcpkg for library management
+          git clone https://github.com/Microsoft/vcpkg.git C:/vcpkg
+          cd C:/vcpkg
+          ./bootstrap-vcpkg.bat
+          ./vcpkg integrate install
+          
+          # Install all enterprise libraries
+          echo "Installing OpenSSL..."
+          ./vcpkg install openssl:x64-windows-static
+          
+          echo "Installing ICU..."
+          ./vcpkg install icu:x64-windows-static
+          
+          echo "Installing compression libraries..."
+          ./vcpkg install lz4:x64-windows-static
+          ./vcpkg install zstd:x64-windows-static
+          
+          echo "Installing XML library..."
+          ./vcpkg install libxml2:x64-windows-static
+          
+          echo "Installing LLVM..."
+          ./vcpkg install llvm:x64-windows-static
+          
+          echo "Installing UUID library..."
+          ./vcpkg install util-linux:x64-windows-static
+          
+          # Install build tools
+          choco install winflexbison3
+          
+          # Add paths
+          toolsPath="/c/ProgramData/chocolatey/lib/winflexbison3/tools"
+          echo "$toolsPath" >> $GITHUB_PATH
+          echo "C:/vcpkg/installed/x64-windows-static/bin" >> $GITHUB_PATH
+          echo "C:/vcpkg/installed/x64-windows-static/tools" >> $GITHUB_PATH
+          
+          # Create symlinks for bison/flex
+          if [ -f "$toolsPath/win_bison.exe" ]; then
+            ln -s "$toolsPath/win_bison.exe" "$toolsPath/bison.exe"
+          fi
+          if [ -f "$toolsPath/win_flex.exe" ]; then
+            ln -s "$toolsPath/win_flex.exe" "$toolsPath/flex.exe"
+          fi
+          
+          # Set environment variables for PostgreSQL configure
+          echo "PKG_CONFIG_PATH=C:/vcpkg/installed/x64-windows-static/lib/pkgconfig" >> $GITHUB_ENV
+          echo "CMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" >> $GITHUB_ENV
+          echo "VCPKG_TARGET_TRIPLET=x64-windows-static" >> $GITHUB_ENV
+          
+          echo "=== Full variant dependencies complete ==="
         fi
-        if [ -f "$toolsPath/win_flex.exe" ]; then
-          ln -s "$toolsPath/win_flex.exe" "$toolsPath/flex.exe"
-        fi
-        
-        echo "=== Windows dependency installation complete (minimal build) ==="
 
 
     - name: Get version from package.json
@@ -237,6 +296,8 @@ jobs:
           "postgres-full-darwin-x64.tar.gz" 
           "postgres-full-linux-x64.tar.gz"
           "postgres-full-linux-arm64.tar.gz"
+          # Windows full variant (experimental)
+          "postgres-full-win32-x64.tar.gz"
         )
         
         missing_files=()
