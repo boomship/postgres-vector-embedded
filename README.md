@@ -52,9 +52,9 @@ npm install @boomship/postgres-vector-embedded
 | macOS    | x64 (Intel) | ✅ Supported | SSL, ICU, LZ4, ZSTD, XML, LLVM, UUID |
 | Linux    | x64         | ✅ Supported | SSL, ICU, LZ4, ZSTD, XML, LLVM, UUID |
 | Linux    | ARM64       | ✅ Supported | SSL, ICU, LZ4, ZSTD, XML, LLVM, UUID |
-| Windows  | x64         | ⚠️ Limited | Basic (PostgreSQL + pgvector only) |
+| Windows  | x64         | ❌ Unsupported | Not available |
 
-> **Windows Full Variant**: Currently in development. Windows lite variant provides basic PostgreSQL + pgvector functionality. Full variant with enterprise features coming in v1.0.
+> **Windows Full Variant**: Not available in current release. Use lite variant on Windows. Full variant with enterprise features coming in v1.0.
 
 ### Basic Usage
 
