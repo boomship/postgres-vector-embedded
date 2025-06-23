@@ -121,7 +121,8 @@ jobs:
         else
           echo "Installing full dependencies for enterprise variant..."
           
-          # Install vcpkg for library management
+          # Install vcpkg for library management (clean install)
+          if [ -d "C:/vcpkg" ]; then rm -rf C:/vcpkg; fi
           git clone https://github.com/Microsoft/vcpkg.git C:/vcpkg
           cd C:/vcpkg
           ./bootstrap-vcpkg.bat
