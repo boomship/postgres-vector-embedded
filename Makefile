@@ -62,9 +62,9 @@ else ifeq ($(VARIANT),full)
     else ifeq ($(PLATFORM),linux)
         CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --with-lz4 --with-zstd --with-libxml --with-llvm --with-uuid=e2fs --disable-nls
     else ifeq ($(PLATFORM),win32)
-        # Windows full build with OpenSSL and enterprise features via vcpkg
-        VCPKG_ROOT := $(VCPKG_INSTALLATION_ROOT)/installed/x64-windows-static
-        CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --with-lz4 --with-zstd --with-libxml --with-llvm --with-uuid=e2fs --disable-nls --with-includes="$(VCPKG_ROOT)/include" --with-libraries="$(VCPKG_ROOT)/lib" CPPFLAGS="-I$(VCPKG_ROOT)/include" LDFLAGS="-L$(VCPKG_ROOT)/lib"
+        # Windows full build with OpenSSL and enterprise features via MSYS2/MinGW
+        MINGW_PREFIX := /mingw64
+        CONFIGURE_FLAGS = --host=x86_64-w64-mingw32 --prefix=$(PREFIX) --with-openssl --with-icu --with-lz4 --with-zstd --with-libxml --with-llvm --with-uuid=e2fs --disable-nls --with-includes="$(MINGW_PREFIX)/include" --with-libraries="$(MINGW_PREFIX)/lib"
     endif
 endif
 
