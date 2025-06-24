@@ -98,6 +98,8 @@ ifeq ($(VARIANT),full)
 	# Fix bind macro conflict in C++ files - add after postgres.h include
 	sed -i '/^#include "postgres.h"/a #ifdef bind\n#undef bind\n#endif' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit_wrap.cpp
 	sed -i '/^#include "postgres.h"/a #ifdef bind\n#undef bind\n#endif' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit_inline.cpp || true
+	# Fix sys/mman.h missing on Windows - replace with Windows equivalent
+	sed -i 's|#include <sys/mman.h>|#ifdef _WIN32\n#include <windows.h>\n#else\n#include <sys/mman.h>\n#endif|g' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit_inline.cpp || true
 	# Fix rindex usage in llvmjit.c 
 	sed -i 's/rindex(/strrchr(/g' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit.c || true
 endif
