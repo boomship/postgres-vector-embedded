@@ -99,7 +99,6 @@ ifeq ($(VARIANT),full)
 	@echo "🚀 Using Meson for Windows full variant with LLVM support!"
 	cd $(POSTGRES_SRC) && meson setup build \
 		--prefix=$(PREFIX) \
-		--cross-file=../../windows-mingw64.txt \
 		--default-library=shared \
 		-Dicu=enabled \
 		-Dssl=openssl \
