@@ -72,7 +72,7 @@ endif
 
 all: build
 
-build: download extract configure compile install package
+build: download extract patch configure compile install package
 
 test: build
 	@echo "🧪 Testing built binaries..."
@@ -91,6 +91,17 @@ extract:
 		tar -xzf postgresql-$(POSTGRES_VERSION).tar.gz && \
 		tar -xzf pgvector-$(PGVECTOR_VERSION).tar.gz
 
+patch:
+	@echo "🔧 Applying minimal Windows LLVM compatibility patches..."
+ifeq ($(PLATFORM),win32)
+ifeq ($(VARIANT),full)
+	# Fix bind macro conflict in C++ files - add after postgres.h include
+	sed -i '/^#include "postgres.h"/a #ifdef bind\n#undef bind\n#endif' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit_wrap.cpp
+	sed -i '/^#include "postgres.h"/a #ifdef bind\n#undef bind\n#endif' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit_inline.cpp || true
+	# Fix rindex usage in llvmjit.c 
+	sed -i 's/rindex(/strrchr(/g' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit.c || true
+endif
+endif
 
 configure:
 	@echo "⚙️  Configuring PostgreSQL build..."
