@@ -105,12 +105,21 @@ ifeq ($(VARIANT),full)
 	sed -i '/^#include "postgres.h"/a #ifdef bind\n#undef bind\n#endif' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit_wrap.cpp
 	# Fix rindex usage in llvmjit.c
 	sed -i 's/rindex(/strrchr(/g' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit.c
-	# Fix Windows LLVM linking issues in Makefile.shlib - be more precise
-	sed -i '/^SHLIB_LINK[[:space:]]*=/s/$$/ -lstdc++ -lgcc_s -lwinpthread/' $(POSTGRES_SRC)/src/Makefile.shlib
-	# Fix LLVM JIT Makefile for Windows linking - only if SHLIB_LINK exists
-	@if grep -q "^SHLIB_LINK" $(POSTGRES_SRC)/src/backend/jit/llvm/Makefile; then \
-		sed -i '/^SHLIB_LINK[[:space:]]*=/s/$$/ -lstdc++ -lgcc_s -lwinpthread/' $(POSTGRES_SRC)/src/backend/jit/llvm/Makefile; \
+	# Fix Windows LLVM linking issues - AGGRESSIVE MULTI-ANGLE ATTACK
+	# 1. Patch main Makefile.shlib 
+	sed -i '/SHLIB_LINK.*=/s/$$/ -lstdc++ -lgcc_s -lwinpthread/' $(POSTGRES_SRC)/src/Makefile.shlib
+	# 2. Patch LLVM-specific Makefile if it exists
+	@if [ -f "$(POSTGRES_SRC)/src/backend/jit/llvm/Makefile" ]; then \
+		sed -i '/SHLIB_LINK/s/$$/ -lstdc++ -lgcc_s -lwinpthread/' $(POSTGRES_SRC)/src/backend/jit/llvm/Makefile; \
+		echo "LIBS += -lstdc++ -lgcc_s -lwinpthread" >> $(POSTGRES_SRC)/src/backend/jit/llvm/Makefile; \
+		echo "override CPPFLAGS += -DWIN32_LEAN_AND_MEAN" >> $(POSTGRES_SRC)/src/backend/jit/llvm/Makefile; \
 	fi
+	# 3. Patch configure.ac to add Windows C++ linking flags globally
+	sed -i '/LDFLAGS.*mingw/s/$$/ -lstdc++ -lgcc_s -lwinpthread/' $(POSTGRES_SRC)/configure || true
+	# 4. Force C++ linker for LLVM components on Windows  
+	sed -i 's/x86_64-w64-mingw32-gcc/x86_64-w64-mingw32-g++/g' $(POSTGRES_SRC)/src/backend/jit/llvm/Makefile || true
+	# 5. Add explicit linking to main postgres build
+	echo "LIBS += -lstdc++ -lgcc_s -lwinpthread" >> $(POSTGRES_SRC)/src/backend/Makefile
 	# Add missing exports to win32 def file if it exists
 	@if [ -f "$(POSTGRES_SRC)/src/backend/postgres.def" ]; then \
 		echo "CurrentResourceOwner" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
