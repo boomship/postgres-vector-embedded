@@ -159,8 +159,8 @@ ifeq ($(VARIANT),full)
 	sed -i 's/LDFLAGS.*postgres.*=/& -Wl,--export-all-symbols/' $(POSTGRES_SRC)/src/backend/Makefile || true
 	# 4. Add explicit export flags to postgres build
 	echo "override LDFLAGS += -Wl,--export-all-symbols -Wl,--out-implib=libpostgres.a" >> $(POSTGRES_SRC)/src/backend/Makefile
-	# 5. Patch main postgres Makefile to use the .def file
-	sed -i '/postgres.*:/a\\t$$(CC) $$(CFLAGS) $$(LDFLAGS) -o $$@ $$^ $$(LIBS) -Wl,--def=$(POSTGRES_SRC)/src/backend/postgres.def' $(POSTGRES_SRC)/src/backend/Makefile || true
+	# 5. Use correct MinGW .def file syntax  
+	sed -i 's|--def=.*postgres\.def|postgres.def|g' $(POSTGRES_SRC)/src/backend/Makefile || true
 endif
 endif
 
