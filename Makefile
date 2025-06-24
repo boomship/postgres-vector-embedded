@@ -105,10 +105,12 @@ ifeq ($(VARIANT),full)
 	sed -i '/^#include "postgres.h"/a #ifdef bind\n#undef bind\n#endif' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit_wrap.cpp
 	# Fix rindex usage in llvmjit.c
 	sed -i 's/rindex(/strrchr(/g' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit.c
-	# Fix Windows LLVM linking issues in Makefile.shlib
-	sed -i 's/SHLIB_LINK.*=/& -lstdc++ -lgcc_s -lwinpthread/' $(POSTGRES_SRC)/src/Makefile.shlib
-	# Fix LLVM JIT Makefile for Windows linking
-	sed -i '/^SHLIB_LINK/s/$$/ -lstdc++ -lgcc_s -lwinpthread/' $(POSTGRES_SRC)/src/backend/jit/llvm/Makefile
+	# Fix Windows LLVM linking issues in Makefile.shlib - be more precise
+	sed -i '/^SHLIB_LINK[[:space:]]*=/s/$$/ -lstdc++ -lgcc_s -lwinpthread/' $(POSTGRES_SRC)/src/Makefile.shlib
+	# Fix LLVM JIT Makefile for Windows linking - only if SHLIB_LINK exists
+	@if grep -q "^SHLIB_LINK" $(POSTGRES_SRC)/src/backend/jit/llvm/Makefile; then \
+		sed -i '/^SHLIB_LINK[[:space:]]*=/s/$$/ -lstdc++ -lgcc_s -lwinpthread/' $(POSTGRES_SRC)/src/backend/jit/llvm/Makefile; \
+	fi
 	# Add missing exports to win32 def file if it exists
 	@if [ -f "$(POSTGRES_SRC)/src/backend/postgres.def" ]; then \
 		echo "CurrentResourceOwner" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
