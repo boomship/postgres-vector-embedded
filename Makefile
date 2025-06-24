@@ -93,7 +93,7 @@ extract:
 
 
 configure:
-	@echo "⚙️  Configuring PostgreSQL build with Meson..."
+	@echo "⚙️  Configuring PostgreSQL build..."
 ifeq ($(PLATFORM),win32)
 ifeq ($(VARIANT),full)
 	@echo "🚀 Using Meson for Windows full variant with LLVM support!"
@@ -113,25 +113,11 @@ else
 	cd $(POSTGRES_SRC) && ./configure $(CONFIGURE_FLAGS)
 endif
 else
-ifeq ($(VARIANT),full)
-	@echo "🚀 Using Meson for $(PLATFORM) full variant with LLVM support!"
-	cd $(POSTGRES_SRC) && meson setup build \
-		--prefix=$(PREFIX) \
-		--default-library=shared \
-		-Dicu=enabled \
-		-Dssl=openssl \
-		-Dlz4=enabled \
-		-Dzstd=enabled \
-		-Dlibxml=enabled \
-		-Dllvm=enabled \
-		-Dnls=disabled
-else
-	@echo "🔧 Using autotools for $(PLATFORM) lite variant"
+	@echo "🔧 Using autotools for $(PLATFORM) $(VARIANT) variant (proven to work)"
 ifeq ($(PLATFORM),darwin)
 	cd $(POSTGRES_SRC) && PKG_CONFIG_PATH="$(ICU_PREFIX)/lib/pkgconfig:$(BREW_PREFIX)/lib/pkgconfig" LLVM_CONFIG="$(LLVM_PREFIX)/bin/llvm-config" ./configure $(CONFIGURE_FLAGS)
 else
 	cd $(POSTGRES_SRC) && ./configure $(CONFIGURE_FLAGS)
-endif
 endif
 endif
 
@@ -147,14 +133,9 @@ else
 	cd $(POSTGRES_SRC) && make -j$(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
 endif
 else
-ifeq ($(VARIANT),full)
-	@echo "🚀 Building with Ninja (Meson backend)"
-	cd $(POSTGRES_SRC) && ninja -C build
-else
-	@echo "🔧 Building with Make (autotools)"
+	@echo "🔧 Building with Make (autotools - proven to work)"
 	cd $(POSTGRES_SRC) && make -C ./src/backend generated-headers
 	cd $(POSTGRES_SRC) && make -j$(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
-endif
 endif
 
 install:
@@ -169,13 +150,8 @@ else
 	cd $(POSTGRES_SRC) && make install
 endif
 else
-ifeq ($(VARIANT),full)
-	@echo "🚀 Installing with Meson"
-	cd $(POSTGRES_SRC) && meson install -C build
-else
-	@echo "🔧 Installing with Make"
+	@echo "🔧 Installing with Make (autotools - proven to work)"
 	cd $(POSTGRES_SRC) && make install
-endif
 endif
 	@echo "🔨 Compiling pgvector..."
 	cd $(PGVECTOR_SRC) && make PG_CONFIG=$(PREFIX)/bin/pg_config
