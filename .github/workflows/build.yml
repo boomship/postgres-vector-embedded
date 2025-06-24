@@ -53,6 +53,11 @@ jobs:
             platform: linux
             arch: arm64
             variant: full
+          # Windows full variant (experimental)
+          - os: windows-latest
+            platform: win32
+            arch: x64
+            variant: full
 
     runs-on: ${{ matrix.os }}
     
@@ -82,36 +87,64 @@ jobs:
           # For ARM64, we'll use QEMU emulation - Docker already available on runner
           echo "Using QEMU emulation for ARM64 build"
         else
-          sudo apt-get install -y build-essential zlib1g-dev libreadline-dev libssl-dev libicu-dev liblz4-dev libzstd-dev libxml2-dev llvm-dev uuid-dev clang
+          sudo apt-get install -y build-essential zlib1g-dev libreadline-dev libssl-dev libicu-dev liblz4-dev libzstd-dev libxml2-dev llvm-dev uuid-dev clang meson ninja-build pkg-config
         fi
 
     - name: Install dependencies (macOS)
       if: runner.os == 'macOS'
       run: |
-        brew install openssl readline icu4c lz4 zstd libxml2 llvm e2fsprogs
+        brew install openssl readline icu4c lz4 zstd libxml2 llvm e2fsprogs meson ninja pkg-config
 
     - name: Install dependencies (Windows)
       if: runner.os == 'Windows'
       run: |
         echo "=== Windows dependency installation starting ==="
         
-        # Install only essential build tools - no OpenSSL for now
-        echo "Installing winflexbison3..."
-        choco install winflexbison3
-        
-        # Add bison/flex to PATH
-        toolsPath="/c/ProgramData/chocolatey/lib/winflexbison3/tools"
-        echo "$toolsPath" >> $GITHUB_PATH
-        
-        # Create symlinks if needed
-        if [ -f "$toolsPath/win_bison.exe" ]; then
-          ln -s "$toolsPath/win_bison.exe" "$toolsPath/bison.exe"
+        # For lite variant, minimal build tools only
+        if [ "${{ matrix.variant }}" = "lite" ]; then
+          echo "Installing minimal dependencies for lite variant..."
+          choco install winflexbison3
+          
+          # Add bison/flex to PATH
+          toolsPath="/c/ProgramData/chocolatey/lib/winflexbison3/tools"
+          echo "$toolsPath" >> $GITHUB_PATH
+          
+          # Create symlinks if needed
+          if [ -f "$toolsPath/win_bison.exe" ]; then
+            ln -s "$toolsPath/win_bison.exe" "$toolsPath/bison.exe"
+          fi
+          if [ -f "$toolsPath/win_flex.exe" ]; then
+            ln -s "$toolsPath/win_flex.exe" "$toolsPath/flex.exe"
+          fi
+          
+          echo "=== Lite variant dependencies complete ==="
+        else
+          echo "Installing full dependencies using MSYS2/MinGW..."
+          echo "=== MSYS2 full variant dependencies complete ==="
         fi
-        if [ -f "$toolsPath/win_flex.exe" ]; then
-          ln -s "$toolsPath/win_flex.exe" "$toolsPath/flex.exe"
-        fi
-        
-        echo "=== Windows dependency installation complete (minimal build) ==="
+
+    - name: Setup MSYS2 (Windows Full Variant)
+      if: runner.os == 'Windows' && matrix.variant == 'full'
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        update: true
+        install: >-
+          mingw-w64-x86_64-toolchain
+          mingw-w64-x86_64-openssl
+          mingw-w64-x86_64-icu
+          mingw-w64-x86_64-lz4
+          mingw-w64-x86_64-zstd
+          mingw-w64-x86_64-libxml2
+          mingw-w64-x86_64-llvm
+          mingw-w64-x86_64-clang
+          mingw-w64-x86_64-meson
+          mingw-w64-x86_64-ninja
+          mingw-w64-x86_64-pkg-config
+          base-devel
+          autotools
+          bison
+          flex
 
 
     - name: Get version from package.json
@@ -125,8 +158,18 @@ jobs:
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "Building version: $VERSION"
 
-    - name: Build PostgreSQL + pgvector (Windows)
-      if: runner.os == 'Windows'
+    - name: Build PostgreSQL + pgvector (Windows Lite)
+      if: runner.os == 'Windows' && matrix.variant == 'lite'
+      shell: bash
+      run: |
+        export PLATFORM=${{ matrix.platform }}
+        export ARCH=${{ matrix.arch }}
+        export VARIANT=${{ matrix.variant }}
+        make build
+
+    - name: Build PostgreSQL + pgvector (Windows Full)
+      if: runner.os == 'Windows' && matrix.variant == 'full'
+      shell: msys2 {0}
       run: |
         export PLATFORM=${{ matrix.platform }}
         export ARCH=${{ matrix.arch }}
@@ -157,8 +200,18 @@ jobs:
         export VARIANT=${{ matrix.variant }}
         make build
 
-    - name: Test binaries functionality (Windows)
-      if: runner.os == 'Windows'
+    - name: Test binaries functionality (Windows Lite)
+      if: runner.os == 'Windows' && matrix.variant == 'lite'
+      shell: bash
+      run: |
+        export PLATFORM=${{ matrix.platform }}
+        export ARCH=${{ matrix.arch }}
+        export VARIANT=${{ matrix.variant }}
+        ./test-binaries.sh
+
+    - name: Test binaries functionality (Windows Full)
+      if: runner.os == 'Windows' && matrix.variant == 'full'
+      shell: msys2 {0}
       run: |
         export PLATFORM=${{ matrix.platform }}
         export ARCH=${{ matrix.arch }}
@@ -237,6 +290,8 @@ jobs:
           "postgres-full-darwin-x64.tar.gz" 
           "postgres-full-linux-x64.tar.gz"
           "postgres-full-linux-arm64.tar.gz"
+          # Windows full variant (experimental)
+          "postgres-full-win32-x64.tar.gz"
         )
         
         missing_files=()
