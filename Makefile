@@ -120,7 +120,9 @@ ifeq ($(VARIANT),full)
 	sed -i 's/x86_64-w64-mingw32-gcc/x86_64-w64-mingw32-g++/g' $(POSTGRES_SRC)/src/backend/jit/llvm/Makefile || true
 	# 5. Add explicit linking to main postgres build
 	echo "LIBS += -lstdc++ -lgcc_s -lwinpthread" >> $(POSTGRES_SRC)/src/backend/Makefile
-	# Add missing exports to win32 def file if it exists
+	# AGGRESSIVE SYMBOL EXPORT ATTACK - Multiple strategies
+	# 1. Find and patch existing .def files
+	@find $(POSTGRES_SRC) -name "*.def" -exec echo "Found def file: {}" \; || true
 	@if [ -f "$(POSTGRES_SRC)/src/backend/postgres.def" ]; then \
 		echo "CurrentResourceOwner" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
 		echo "pkglib_path" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
@@ -136,6 +138,29 @@ ifeq ($(VARIANT),full)
 		echo "TTSOpsBufferHeapTuple" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
 		echo "TTSOpsVirtual" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
 	fi
+	# 2. Create .def file if it doesn't exist
+	@if [ ! -f "$(POSTGRES_SRC)/src/backend/postgres.def" ]; then \
+		echo "EXPORTS" > $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "CurrentResourceOwner" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "pkglib_path" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "CurrentMemoryContext" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "TopMemoryContext" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "MyProcPid" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "jit_dump_bitcode" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "proc_exit_inprogress" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "jit_profiling_support" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "jit_debugging_support" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "TTSOpsMinimalTuple" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "TTSOpsHeapTuple" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "TTSOpsBufferHeapTuple" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "TTSOpsVirtual" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+	fi
+	# 3. Force --export-all-symbols for main postgres executable
+	sed -i 's/LDFLAGS.*postgres.*=/& -Wl,--export-all-symbols/' $(POSTGRES_SRC)/src/backend/Makefile || true
+	# 4. Add explicit export flags to postgres build
+	echo "override LDFLAGS += -Wl,--export-all-symbols -Wl,--out-implib=libpostgres.a" >> $(POSTGRES_SRC)/src/backend/Makefile
+	# 5. Patch main postgres Makefile to use the .def file
+	sed -i '/postgres.*:/a\\t$$(CC) $$(CFLAGS) $$(LDFLAGS) -o $$@ $$^ $$(LIBS) -Wl,--def=$(POSTGRES_SRC)/src/backend/postgres.def' $(POSTGRES_SRC)/src/backend/Makefile || true
 endif
 endif
 
