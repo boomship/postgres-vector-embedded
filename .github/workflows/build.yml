@@ -138,6 +138,9 @@ jobs:
           mingw-w64-x86_64-libxml2
           mingw-w64-x86_64-llvm
           mingw-w64-x86_64-clang
+          mingw-w64-x86_64-meson
+          mingw-w64-x86_64-ninja
+          mingw-w64-x86_64-pkg-config
           base-devel
           autotools
           bison
