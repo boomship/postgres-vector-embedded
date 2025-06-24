@@ -100,6 +100,8 @@ ifeq ($(VARIANT),full)
 	sed -i '/^#include "postgres.h"/a #ifdef bind\n#undef bind\n#endif' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit_inline.cpp || true
 	# Fix sys/mman.h missing on Windows - replace with Windows equivalent
 	sed -i 's|#include <sys/mman.h>|#ifdef _WIN32\n#include <windows.h>\n#else\n#include <sys/mman.h>\n#endif|g' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit_inline.cpp || true
+	# Fix netinet/in.h missing on Windows - replace with Windows equivalent
+	sed -i 's|#include <netinet/in.h>|#ifdef _WIN32\n#include <winsock2.h>\n#include <ws2tcpip.h>\n#else\n#include <netinet/in.h>\n#endif|g' $(POSTGRES_SRC)/src/include/port.h || true
 	# Fix rindex usage in llvmjit.c 
 	sed -i 's/rindex(/strrchr(/g' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit.c || true
 endif
@@ -119,7 +121,8 @@ ifeq ($(VARIANT),full)
 		-Dzstd=enabled \
 		-Dlibxml=enabled \
 		-Dllvm=enabled \
-		-Dnls=disabled
+		-Dnls=disabled \
+		-Dc_link_args='-Wl,--export-all-symbols'
 else
 	@echo "🔧 Using autotools for Windows lite variant"
 	cd $(POSTGRES_SRC) && ./configure $(CONFIGURE_FLAGS)
