@@ -62,15 +62,17 @@ else ifeq ($(VARIANT),full)
     else ifeq ($(PLATFORM),linux)
         CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --with-lz4 --with-zstd --with-libxml --with-llvm --with-uuid=e2fs --disable-nls
     else ifeq ($(PLATFORM),win32)
-        $(error Full variant not yet supported on Windows. Use VARIANT=lite)
+        # Windows full build with OpenSSL and enterprise features via MSYS2/MinGW
+        MINGW_PREFIX := /mingw64
+        CONFIGURE_FLAGS = --host=x86_64-w64-mingw32 --prefix=$(PREFIX) --with-openssl --with-icu --with-lz4 --with-zstd --with-libxml --with-llvm --disable-nls --with-includes="$(MINGW_PREFIX)/include" --with-libraries="$(MINGW_PREFIX)/lib"
     endif
 endif
 
-.PHONY: all build clean download extract configure compile install package test
+.PHONY: all build clean download extract patch configure compile install package test
 
 all: build
 
-build: download extract configure compile install package
+build: download extract patch configure compile install package
 
 test: build
 	@echo "🧪 Testing built binaries..."
@@ -88,6 +90,79 @@ extract:
 	cd $(BUILD_DIR) && \
 		tar -xzf postgresql-$(POSTGRES_VERSION).tar.gz && \
 		tar -xzf pgvector-$(PGVECTOR_VERSION).tar.gz
+
+patch:
+	@echo "🔧 Applying Windows LLVM compatibility patches..."
+ifeq ($(PLATFORM),win32)
+ifeq ($(VARIANT),full)
+	# Fix sys/mman.h issue in llvmjit_inline.cpp - wrap the include
+	sed -i '31a #ifdef _WIN32' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit_inline.cpp
+	sed -i '32a // Windows - no sys/mman.h needed' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit_inline.cpp
+	sed -i '33a #else' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit_inline.cpp
+	sed -i 's|#include <sys/mman.h>|#include <sys/mman.h>\n#endif|' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit_inline.cpp
+	# Fix bind macro conflict in both C++ files - add after postgres.h include
+	sed -i '/^#include "postgres.h"/a #ifdef bind\n#undef bind\n#endif' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit_inline.cpp
+	sed -i '/^#include "postgres.h"/a #ifdef bind\n#undef bind\n#endif' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit_wrap.cpp
+	# Fix rindex usage in llvmjit.c
+	sed -i 's/rindex(/strrchr(/g' $(POSTGRES_SRC)/src/backend/jit/llvm/llvmjit.c
+	# Fix Windows LLVM linking issues - AGGRESSIVE MULTI-ANGLE ATTACK
+	# 1. Patch main Makefile.shlib 
+	sed -i '/SHLIB_LINK.*=/s/$$/ -lstdc++ -lgcc_s -lwinpthread/' $(POSTGRES_SRC)/src/Makefile.shlib
+	# 2. Patch LLVM-specific Makefile if it exists
+	@if [ -f "$(POSTGRES_SRC)/src/backend/jit/llvm/Makefile" ]; then \
+		sed -i '/SHLIB_LINK/s/$$/ -lstdc++ -lgcc_s -lwinpthread/' $(POSTGRES_SRC)/src/backend/jit/llvm/Makefile; \
+		echo "LIBS += -lstdc++ -lgcc_s -lwinpthread" >> $(POSTGRES_SRC)/src/backend/jit/llvm/Makefile; \
+		echo "override CPPFLAGS += -DWIN32_LEAN_AND_MEAN" >> $(POSTGRES_SRC)/src/backend/jit/llvm/Makefile; \
+	fi
+	# 3. Patch configure.ac to add Windows C++ linking flags globally
+	sed -i '/LDFLAGS.*mingw/s/$$/ -lstdc++ -lgcc_s -lwinpthread/' $(POSTGRES_SRC)/configure || true
+	# 4. Force C++ linker for LLVM components on Windows  
+	sed -i 's/x86_64-w64-mingw32-gcc/x86_64-w64-mingw32-g++/g' $(POSTGRES_SRC)/src/backend/jit/llvm/Makefile || true
+	# 5. Add explicit linking to main postgres build
+	echo "LIBS += -lstdc++ -lgcc_s -lwinpthread" >> $(POSTGRES_SRC)/src/backend/Makefile
+	# AGGRESSIVE SYMBOL EXPORT ATTACK - Multiple strategies
+	# 1. Find and patch existing .def files
+	@find $(POSTGRES_SRC) -name "*.def" -exec echo "Found def file: {}" \; || true
+	@if [ -f "$(POSTGRES_SRC)/src/backend/postgres.def" ]; then \
+		echo "CurrentResourceOwner" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "pkglib_path" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "CurrentMemoryContext" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "TopMemoryContext" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "MyProcPid" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "jit_dump_bitcode" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "proc_exit_inprogress" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "jit_profiling_support" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "jit_debugging_support" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "TTSOpsMinimalTuple" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "TTSOpsHeapTuple" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "TTSOpsBufferHeapTuple" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "TTSOpsVirtual" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+	fi
+	# 2. Create .def file if it doesn't exist
+	@if [ ! -f "$(POSTGRES_SRC)/src/backend/postgres.def" ]; then \
+		echo "EXPORTS" > $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "CurrentResourceOwner" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "pkglib_path" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "CurrentMemoryContext" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "TopMemoryContext" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "MyProcPid" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "jit_dump_bitcode" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "proc_exit_inprogress" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "jit_profiling_support" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "jit_debugging_support" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "TTSOpsMinimalTuple" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "TTSOpsHeapTuple" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "TTSOpsBufferHeapTuple" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+		echo "TTSOpsVirtual" >> $(POSTGRES_SRC)/src/backend/postgres.def; \
+	fi
+	# 3. Force --export-all-symbols for main postgres executable
+	sed -i 's/LDFLAGS.*postgres.*=/& -Wl,--export-all-symbols/' $(POSTGRES_SRC)/src/backend/Makefile || true
+	# 4. Add explicit export flags to postgres build
+	echo "override LDFLAGS += -Wl,--export-all-symbols -Wl,--out-implib=libpostgres.a" >> $(POSTGRES_SRC)/src/backend/Makefile
+	# 5. Use correct MinGW .def file syntax  
+	sed -i 's|--def=.*postgres\.def|postgres.def|g' $(POSTGRES_SRC)/src/backend/Makefile || true
+endif
+endif
 
 configure:
 	@echo "⚙️  Configuring PostgreSQL build..."
