@@ -66,11 +66,11 @@ else ifeq ($(VARIANT),full)
     endif
 endif
 
-.PHONY: all build clean download extract configure compile install package test
+.PHONY: all build clean download extract configure compile install bundle-deps package test
 
 all: build
 
-build: download extract configure compile install package
+build: download extract configure compile install bundle-deps package
 
 test: build
 	@echo "🧪 Testing built binaries..."
@@ -111,8 +111,43 @@ install:
 	cd $(PGVECTOR_SRC) && make PG_CONFIG=$(PREFIX)/bin/pg_config
 	@echo "📦 Installing pgvector..."
 	cd $(PGVECTOR_SRC) && make install PG_CONFIG=$(PREFIX)/bin/pg_config
+	@echo "⚙️  Configuring variant-specific settings..."
+ifeq ($(VARIANT),lite)
+	@echo "   📝 Configuring lite variant (JIT disabled)..."
+	@echo "# Lite variant configuration - JIT disabled" >> $(PREFIX)/share/postgresql.conf.sample
+	@echo "jit = off  # JIT compilation not available in lite variant" >> $(PREFIX)/share/postgresql.conf.sample
+	@echo "   ✅ Added JIT configuration to postgresql.conf.sample"
+else ifeq ($(VARIANT),full)
+	@echo "   📝 Configuring full variant (JIT enabled)..."
+	@echo "# Full variant configuration - JIT enabled" >> $(PREFIX)/share/postgresql.conf.sample
+	@echo "jit = on   # JIT compilation available with LLVM support" >> $(PREFIX)/share/postgresql.conf.sample
+	@echo "   ✅ Added JIT configuration to postgresql.conf.sample"
+endif
 
-package:
+bundle-deps:
+	@echo "📦 Bundling runtime dependencies..."
+ifeq ($(VARIANT),full)
+    ifeq ($(PLATFORM),darwin)
+		@echo "   🔗 Bundling LLVM libraries for JIT support..."
+		@if [ -f "$(LLVM_PREFIX)/lib/libLLVM.dylib" ]; then \
+			cp "$(LLVM_PREFIX)/lib/libLLVM.dylib" "$(PREFIX)/lib/"; \
+			echo "   ✅ Bundled libLLVM.dylib"; \
+		else \
+			echo "   ⚠️  Warning: libLLVM.dylib not found at $(LLVM_PREFIX)/lib/"; \
+		fi
+		@echo "   🔧 Fixing library paths for bundled dependencies..."
+		@if [ -f "$(PREFIX)/lib/llvmjit.dylib" ] && [ -f "$(PREFIX)/lib/libLLVM.dylib" ]; then \
+			install_name_tool -change "$(LLVM_PREFIX)/lib/libLLVM.dylib" "@loader_path/libLLVM.dylib" "$(PREFIX)/lib/llvmjit.dylib"; \
+			echo "   ✅ Fixed llvmjit.dylib library path"; \
+		fi
+    else
+		@echo "   ℹ️  Dependency bundling not implemented for $(PLATFORM)"
+    endif
+else
+	@echo "   ℹ️  Lite variant - no additional dependencies to bundle"
+endif
+
+package: bundle-deps
 	@echo "📦 Creating distribution package..."
 	cd $(DIST_DIR) && tar -czf postgres-$(VARIANT)-$(PLATFORM)-$(ARCH).tar.gz postgres-$(VARIANT)-$(PLATFORM)-$(ARCH)/
 	@echo "✅ Built: $(DIST_DIR)/postgres-$(VARIANT)-$(PLATFORM)-$(ARCH).tar.gz"
