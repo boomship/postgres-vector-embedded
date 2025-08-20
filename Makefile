@@ -128,18 +128,62 @@ bundle-deps:
 	@echo "📦 Bundling runtime dependencies..."
 ifeq ($(VARIANT),full)
     ifeq ($(PLATFORM),darwin)
-		@echo "   🔗 Bundling LLVM libraries for JIT support..."
+		@echo "   🔗 Bundling LLVM and dependencies for JIT support..."
+		
+		# Bundle LLVM library
 		@if [ -f "$(LLVM_PREFIX)/lib/libLLVM.dylib" ]; then \
 			cp "$(LLVM_PREFIX)/lib/libLLVM.dylib" "$(PREFIX)/lib/"; \
 			echo "   ✅ Bundled libLLVM.dylib"; \
 		else \
-			echo "   ⚠️  Warning: libLLVM.dylib not found at $(LLVM_PREFIX)/lib/"; \
+			echo "   ❌ Error: libLLVM.dylib not found at $(LLVM_PREFIX)/lib/"; \
+			exit 1; \
 		fi
-		@echo "   🔧 Fixing library paths for bundled dependencies..."
+		
+		# Bundle Z3 SMT solver library (LLVM dependency)
+		@if [ -f "$(BREW_PREFIX)/opt/z3/lib/libz3.dylib" ]; then \
+			cp "$(BREW_PREFIX)/opt/z3/lib/libz3.dylib" "$(PREFIX)/lib/"; \
+			echo "   ✅ Bundled libz3.dylib"; \
+		elif [ -f "$(BREW_PREFIX)/opt/z3/lib/libz3.4.15.dylib" ]; then \
+			cp "$(BREW_PREFIX)/opt/z3/lib/libz3.4.15.dylib" "$(PREFIX)/lib/"; \
+			echo "   ✅ Bundled libz3.4.15.dylib"; \
+		else \
+			echo "   ❌ Error: libz3 not found at $(BREW_PREFIX)/opt/z3/lib/"; \
+			exit 1; \
+		fi
+		
+		# Bundle Zstandard compression library (LLVM dependency)  
+		@if [ -f "$(BREW_PREFIX)/opt/zstd/lib/libzstd.1.dylib" ]; then \
+			cp "$(BREW_PREFIX)/opt/zstd/lib/libzstd.1.dylib" "$(PREFIX)/lib/"; \
+			echo "   ✅ Bundled libzstd.1.dylib"; \
+		else \
+			echo "   ❌ Error: libzstd.1.dylib not found at $(BREW_PREFIX)/opt/zstd/lib/"; \
+			exit 1; \
+		fi
+		
+		@echo "   🔧 Fixing library paths for JIT dependencies..."
+		
+		# Fix llvmjit.dylib -> libLLVM.dylib path
 		@if [ -f "$(PREFIX)/lib/llvmjit.dylib" ] && [ -f "$(PREFIX)/lib/libLLVM.dylib" ]; then \
 			install_name_tool -change "$(LLVM_PREFIX)/lib/libLLVM.dylib" "@loader_path/libLLVM.dylib" "$(PREFIX)/lib/llvmjit.dylib"; \
-			echo "   ✅ Fixed llvmjit.dylib library path"; \
+			echo "   ✅ Fixed llvmjit.dylib -> libLLVM.dylib path"; \
 		fi
+		
+		# Fix libLLVM.dylib paths to its dependencies
+		@if [ -f "$(PREFIX)/lib/libLLVM.dylib" ]; then \
+			install_name_tool -id "@loader_path/libLLVM.dylib" "$(PREFIX)/lib/libLLVM.dylib"; \
+			if [ -f "$(PREFIX)/lib/libz3.dylib" ]; then \
+				install_name_tool -change "$(BREW_PREFIX)/opt/z3/lib/libz3.dylib" "@loader_path/libz3.dylib" "$(PREFIX)/lib/libLLVM.dylib"; \
+			elif [ -f "$(PREFIX)/lib/libz3.4.15.dylib" ]; then \
+				install_name_tool -change "$(BREW_PREFIX)/opt/z3/lib/libz3.4.15.dylib" "@loader_path/libz3.4.15.dylib" "$(PREFIX)/lib/libLLVM.dylib"; \
+			fi; \
+			if [ -f "$(PREFIX)/lib/libzstd.1.dylib" ]; then \
+				install_name_tool -change "$(BREW_PREFIX)/opt/zstd/lib/libzstd.1.dylib" "@loader_path/libzstd.1.dylib" "$(PREFIX)/lib/libLLVM.dylib"; \
+			fi; \
+			echo "   ✅ Fixed libLLVM.dylib dependency paths"; \
+		fi
+		
+		@echo "   🎯 JIT dependency bundling complete"
+		
     else
 		@echo "   ℹ️  Dependency bundling not implemented for $(PLATFORM)"
     endif
