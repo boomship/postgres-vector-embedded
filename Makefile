@@ -58,7 +58,7 @@ else ifeq ($(VARIANT),full)
         BREW_PREFIX := $(shell brew --prefix)
         ICU_PREFIX := $(BREW_PREFIX)/opt/icu4c
         LLVM_PREFIX := $(BREW_PREFIX)/opt/llvm
-        CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --with-lz4 --with-zstd --with-libxml --with-llvm --with-uuid=e2fs --disable-nls CFLAGS="-Wno-unguarded-availability-new" --with-includes="$(BREW_PREFIX)/include:$(ICU_PREFIX)/include:$(LLVM_PREFIX)/include" --with-libraries="$(BREW_PREFIX)/lib:$(ICU_PREFIX)/lib:$(LLVM_PREFIX)/lib"
+        CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --with-lz4 --with-zstd --with-libxml --with-llvm --with-uuid=e2fs --disable-nls CFLAGS="-Wno-unguarded-availability-new" --with-includes="$(BREW_PREFIX)/include:$(ICU_PREFIX)/include:$(LLVM_PREFIX)/include" --with-libraries="$(BREW_PREFIX)/lib:$(ICU_PREFIX)/lib:$(LLVM_PREFIX)/lib" LLVM_CONFIG="$(LLVM_PREFIX)/bin/llvm-config" CLANG="$(LLVM_PREFIX)/bin/clang"
     else ifeq ($(PLATFORM),linux)
         CONFIGURE_FLAGS = --prefix=$(PREFIX) --with-openssl --with-icu --with-lz4 --with-zstd --with-libxml --with-llvm --with-uuid=e2fs --disable-nls
     else ifeq ($(PLATFORM),win32)
@@ -92,7 +92,11 @@ extract:
 configure:
 	@echo "⚙️  Configuring PostgreSQL build..."
 ifeq ($(PLATFORM),darwin)
-	cd $(POSTGRES_SRC) && PKG_CONFIG_PATH="$(ICU_PREFIX)/lib/pkgconfig:$(BREW_PREFIX)/lib/pkgconfig" LLVM_CONFIG="$(LLVM_PREFIX)/bin/llvm-config" ./configure $(CONFIGURE_FLAGS)
+ifeq ($(VARIANT),full)
+	cd $(POSTGRES_SRC) && PKG_CONFIG_PATH="$(ICU_PREFIX)/lib/pkgconfig:$(BREW_PREFIX)/lib/pkgconfig" LLVM_CONFIG="$(LLVM_PREFIX)/bin/llvm-config" CLANG="$(LLVM_PREFIX)/bin/clang" ./configure $(CONFIGURE_FLAGS)
+else
+	cd $(POSTGRES_SRC) && PKG_CONFIG_PATH="$(BREW_PREFIX)/lib/pkgconfig" ./configure $(CONFIGURE_FLAGS)
+endif
 else
 	cd $(POSTGRES_SRC) && ./configure $(CONFIGURE_FLAGS)
 endif
