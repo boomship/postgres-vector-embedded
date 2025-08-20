@@ -94,7 +94,59 @@ FROM test_vectors
 ORDER BY distance;
 "
 
-# Test 7: Clean shutdown
+# Test 7: JIT functionality (full variant only)
+if [ "$VARIANT" = "full" ]; then
+  echo "🔬 Testing JIT compilation (full variant)..."
+  
+  # Test basic JIT availability
+  echo "   Testing JIT availability..."
+  ${POSTGRES_DIR}/bin/psql -p ${TEST_PORT} -d template1 -U ${USER} -c "SHOW jit;" || {
+    echo "❌ ERROR: JIT parameter not available"
+    exit 1
+  }
+  
+  # Test JIT can be enabled without errors
+  echo "   Testing JIT enable/disable..."
+  ${POSTGRES_DIR}/bin/psql -p ${TEST_PORT} -d template1 -U ${USER} -c "SET jit = on;" || {
+    echo "❌ ERROR: Failed to enable JIT"
+    exit 1
+  }
+  
+  # Test JIT with actual compilation (force low cost threshold)
+  echo "   Testing JIT compilation with complex query..."
+  ${POSTGRES_DIR}/bin/psql -p ${TEST_PORT} -d template1 -U ${USER} -c "
+    SET jit = on;
+    SET jit_above_cost = 0;
+    SET jit_optimize_above_cost = 0;
+    SET jit_inline_above_cost = 0;
+    
+    -- Create larger dataset for JIT to kick in
+    CREATE TABLE jit_test AS 
+    SELECT i as id, random() as value, 'test_' || i as name 
+    FROM generate_series(1, 1000) i;
+    
+    -- Complex query that should trigger JIT
+    SELECT COUNT(*), AVG(value), MIN(value), MAX(value)
+    FROM jit_test 
+    WHERE value > 0.5 AND id % 3 = 0
+    GROUP BY (id / 100)::int
+    HAVING COUNT(*) > 5;
+    
+    DROP TABLE jit_test;
+  " || {
+    echo "❌ ERROR: JIT compilation failed"
+    exit 1
+  }
+  
+  echo "   ✅ JIT functionality working correctly"
+  
+elif [ "$VARIANT" = "lite" ]; then
+  echo "ℹ️  Skipping JIT test (lite variant - JIT not available)"
+else
+  echo "⚠️  Unknown variant: $VARIANT - skipping JIT test"
+fi
+
+# Test 8: Clean shutdown
 echo "🛑 Testing server shutdown..."
 ${POSTGRES_DIR}/bin/pg_ctl -D ${TEST_DIR}/data stop
 
