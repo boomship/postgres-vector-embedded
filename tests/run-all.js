@@ -2,6 +2,26 @@ import { downloadBinaries } from '../dist/index.js';
 
 console.log('🧪 Running comprehensive test suite...');
 
+// Test JIT issue first (diagnostic test)
+console.log('\n=== JIT ISSUE DIAGNOSIS ===');
+try {
+  console.log('🔬 Running JIT issue test...');
+  const { spawn } = await import('child_process');
+  const jitTest = spawn('node', ['tests/test-jit-issue.js'], { stdio: 'inherit' });
+  await new Promise((resolve) => {
+    jitTest.on('close', (code) => {
+      if (code === 0) {
+        console.log('✅ PASS: JIT issue successfully demonstrated');
+      } else {
+        console.log('⚠️  INFO: JIT test completed with warnings');
+      }
+      resolve();
+    });
+  });
+} catch (e) {
+  console.log('❌ INFO: JIT test unavailable -', e.message);
+}
+
 // Test current platform detection and basic functionality
 console.log('\n=== BASIC FUNCTIONALITY ===');
 try {

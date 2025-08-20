@@ -1,6 +1,6 @@
 {
   "name": "@boomship/postgres-vector-embedded",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Embedded PostgreSQL with pgvector extension for Node.js applications",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
