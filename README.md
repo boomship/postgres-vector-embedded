@@ -13,10 +13,12 @@ Embedded PostgreSQL with pgvector extension for Node.js applications.
 
 ## Overview
 
-An embedded PostgreSQL + pgvector solution for Node.js applications:
+An embedded PostgreSQL + pgvector + pg_trgm solution for Node.js applications:
 
-- **PostgreSQL 17.5** — latest stable database engine  
-- **pgvector 0.8.0** — enables vector similarity search with HNSW indexing
+- **PostgreSQL 18.6** — latest stable database engine
+- **pgvector 0.8.6** — enables vector similarity search with HNSW indexing
+- **pg_trgm** — trigram similarity and indexed text search, included in both variants
+- **pg_upgrade** — bundled alongside pg_dump, pg_dumpall, pg_restore and pg_controldata
 - **Dual variants** — lite (basic) and full (with SSL, compression, XML) builds available
 - **Advanced capabilities** — SSL/TLS, compression, XML support, JIT compilation
 - **No manual setup** — precompiled binaries ready to run
@@ -24,7 +26,7 @@ An embedded PostgreSQL + pgvector solution for Node.js applications:
 
 Ideal for projects needing vector search *without* relying on external Postgres instances or Docker.
 
-> ⚠️ Note: The included TypeScript code is intended as **example usage only**. It is not production-ready and is provided to demonstrate how to use the embedded binaries. The real value of this package lies in its cross-platform PostgreSQL + pgvector binaries.
+> ⚠️ Note: The included TypeScript code is intended as **example usage only**. It is not production-ready and is provided to demonstrate how to use the embedded binaries. The real value of this package lies in its cross-platform PostgreSQL + pgvector + pg_trgm binaries.
 
 ## Quick Start
 
@@ -36,7 +38,7 @@ npm install @boomship/postgres-vector-embedded
 
 ## Platform Support
 
-### Lite Variant (Basic PostgreSQL + pgvector)
+### Lite Variant (Basic PostgreSQL + pgvector + pg_trgm)
 | Platform | Architecture | Status |
 |----------|-------------|---------|
 | macOS    | ARM64 (M1+) | ✅ Supported |
@@ -101,16 +103,16 @@ await client.query(`
 
 // Insert documents with embeddings
 await client.query(`
-  INSERT INTO documents (content, embedding) VALUES 
+  INSERT INTO documents (content, embedding) VALUES
   ('Hello world', '[0.1, 0.2, 0.3, ...]'),
   ('Goodbye world', '[0.4, 0.5, 0.6, ...]')
 `);
 
 // Vector similarity search
 const result = await client.query(`
-  SELECT content, embedding <-> '[0.1, 0.2, 0.3, ...]' as distance 
-  FROM documents 
-  ORDER BY distance 
+  SELECT content, embedding <-> '[0.1, 0.2, 0.3, ...]' as distance
+  FROM documents
+  ORDER BY distance
   LIMIT 5
 `);
 
@@ -144,13 +146,13 @@ make clean
 
 ### `downloadBinaries(options?)`
 
-Downloads platform-specific PostgreSQL + pgvector binaries.
+Downloads platform-specific PostgreSQL + pgvector + pg_trgm binaries.
 
 ```typescript
 interface DownloadOptions {
   version?: string;           // Default: latest
   platform?: PlatformType;   // Auto-detected
-  architecture?: ArchType;   // Auto-detected  
+  architecture?: ArchType;   // Auto-detected
   variant?: Variant;          // 'lite' | 'full' (default: 'lite')
   downloadDir?: string;       // Default: './postgres-binaries'
 }
@@ -183,7 +185,7 @@ interface PostgresServerOptions {
 
 Existing solutions are incomplete - they're either client libraries that require existing PostgreSQL installations, PostgreSQL-only packages without pgvector, or solutions with older versions.
 
-This package provides **a complete embedded solution** with PostgreSQL 17.5 and pgvector 0.8.0, offering both lite and full variants.
+This package provides **a complete embedded solution** with PostgreSQL 18.6 and pgvector 0.8.6, offering both lite and full variants.
 
 ## Advanced Capabilities
 
@@ -197,7 +199,7 @@ The full variant includes additional PostgreSQL features:
 - **Vector Search** — pgvector with HNSW indexing for high-performance similarity search *(all platforms)*
 
 **Choose Your Variant:**
-- **Lite** — Core PostgreSQL + pgvector (smaller footprint, faster startup)
+- **Lite** — Core PostgreSQL + pgvector + pg_trgm (smaller footprint, faster startup)
 - **Full** — Additional PostgreSQL features enabled (SSL, compression, XML, JIT compilation)
 
 > Full variant features are currently available on macOS and Linux. Windows full variant is coming in v1.0.
@@ -220,3 +222,40 @@ This repository is published as a **curated release**. That means:
 MIT - See LICENSE file for details.
 
 PostgreSQL and pgvector maintain their respective licenses (see licenses/ directory).
+
+## PostgreSQL 18 migration (package 0.3.0)
+
+Existing PostgreSQL 17 data directories require migration. The wrapper checks the
+actual server binary major version against `PG_VERSION` and rejects a mismatch.
+It never upgrades or deletes an existing database automatically.
+
+Keep the old binaries (including their extension libraries) and data directory.
+Download the new binaries into a separate directory; cached installations without
+pg_trgm are rejected. Release 0.3.0 assets must be published before the default
+downloader can fetch them.
+
+The new bundle includes `bin/pg_upgrade`. Stop both servers, back up your database,
+and initialize a separate empty PostgreSQL 18 cluster with matching encoding,
+locale and checksum settings. PG18 enables checksums by default; for an old cluster
+without checksums, use `initdb --no-data-checksums`. Do not create extensions in the
+new cluster before pg_upgrade; their library and SQL files are already shipped.
+
+Run the **new** pg_upgrade with `--old-bindir`, `--new-bindir`, `--old-datadir`,
+`--new-datadir` and `--check` first. After a successful check, run it without
+`--check` (default copy mode preserves the old data files). Follow any generated
+extension-update instructions. See the [official upgrade procedure](https://www.postgresql.org/docs/18/pgupgrade.html).
+
+`PostgresServer.start()` enables both `vector` and `pg_trgm` in the `postgres`
+database. For another database, enable them explicitly:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS vector;
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE INDEX documents_title_trgm ON documents USING gin (title gin_trgm_ops);
+SELECT similarity('postgres', 'postgress');
+```
+
+Run `npm test` for local package regression tests, and `make test` to build and
+exercise the native binaries, extensions and upgrade tools. Set `TEST_BINARIES_DIR` to a built bundle directory to include the live wrapper
+startup/restart integration test in `npm test`. Historical download
+diagnostics are available separately via `npm run test:legacy`.

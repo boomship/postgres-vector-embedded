@@ -14,7 +14,6 @@ export declare class PostgresServer {
     private password;
     private config;
     private process;
-    private isInitialized;
     constructor(options: PostgresServerOptions);
     /**
      * Initialize the PostgreSQL data directory (only needed once)
@@ -41,9 +40,9 @@ export declare class PostgresServer {
      */
     private waitForReady;
     /**
-     * Install the pgvector extension
+     * Install the bundled extensions
      */
-    private installPgVector;
+    private installExtensions;
     /**
      * Write PostgreSQL configuration file
      */

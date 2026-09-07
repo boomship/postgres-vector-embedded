@@ -1,8 +1,8 @@
-# PostgreSQL + pgvector embedded build
-# Latest versions as of 2025-06-21
+# PostgreSQL + pgvector + pg_trgm embedded build
+# Latest versions as of 2026-09-07
 
-POSTGRES_VERSION = 17.5
-PGVECTOR_VERSION = 0.8.0
+POSTGRES_VERSION = 18.6
+PGVECTOR_VERSION = 0.8.6
 
 # Platform detection - use environment variables if set, otherwise detect
 ifndef PLATFORM
@@ -50,7 +50,7 @@ PREFIX = $(CURDIR)/$(INSTALL_DIR)
 
 # Build configuration based on variant and platform
 ifeq ($(VARIANT),lite)
-    # Lite version: PostgreSQL + pgvector only (all platforms)
+    # Lite version: PostgreSQL + pgvector + pg_trgm only (all platforms)
     CONFIGURE_FLAGS = --prefix=$(PREFIX) --disable-nls --without-openssl --without-icu --without-llvm --without-lz4 --without-zstd --without-libxml
 else ifeq ($(VARIANT),full)
     # Full version: All enterprise features
@@ -80,8 +80,8 @@ download:
 	@echo "📦 Downloading PostgreSQL $(POSTGRES_VERSION) and pgvector $(PGVECTOR_VERSION)..."
 	mkdir -p $(BUILD_DIR)
 	cd $(BUILD_DIR) && \
-		curl -L $(POSTGRES_URL) -o postgresql-$(POSTGRES_VERSION).tar.gz && \
-		curl -L $(PGVECTOR_URL) -o pgvector-$(PGVECTOR_VERSION).tar.gz
+		curl --fail --location $(POSTGRES_URL) -o postgresql-$(POSTGRES_VERSION).tar.gz && \
+		curl --fail --location $(PGVECTOR_URL) -o pgvector-$(PGVECTOR_VERSION).tar.gz
 
 extract:
 	@echo "📂 Extracting source archives..."
@@ -111,6 +111,9 @@ install:
 	@echo "📦 Installing PostgreSQL..."
 	mkdir -p $(INSTALL_DIR)
 	cd $(POSTGRES_SRC) && make install
+	@echo "📦 Building and installing pg_trgm..."
+	$(MAKE) -C $(POSTGRES_SRC)/contrib/pg_trgm
+	$(MAKE) -C $(POSTGRES_SRC)/contrib/pg_trgm install
 	@echo "🔨 Compiling pgvector..."
 	cd $(PGVECTOR_SRC) && make PG_CONFIG=$(PREFIX)/bin/pg_config
 	@echo "📦 Installing pgvector..."
@@ -186,6 +189,9 @@ ifeq ($(VARIANT),full)
 			echo "   ✅ Fixed libLLVM.dylib dependency paths"; \
 		fi
 		
+		# install_name_tool invalidates Mach-O signatures; restore ad-hoc signatures.
+		codesign --force --sign - "$(PREFIX)/lib/libLLVM.dylib"
+		@if [ -f "$(PREFIX)/lib/llvmjit.dylib" ]; then codesign --force --sign - "$(PREFIX)/lib/llvmjit.dylib"; fi
 		@echo "   🎯 JIT dependency bundling complete"
 		
     else

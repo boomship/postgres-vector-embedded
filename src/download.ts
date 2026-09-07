@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
-import { access, mkdir, rm } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { access, mkdir, readFile, readdir, rm } from 'node:fs/promises';
+import { join } from 'node:path';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { createGunzip } from 'node:zlib';
@@ -9,7 +9,7 @@ import { detectPlatform, getDownloadUrl, validatePlatformArch } from './platform
 import type { DownloadOptions } from './types.js';
 
 /**
- * Download and extract PostgreSQL + pgvector binaries for the current or specified platform
+ * Download and extract PostgreSQL + pgvector + pg_trgm binaries for the current or specified platform
  */
 export async function downloadBinaries(options: DownloadOptions): Promise<void> {
   const {
@@ -30,11 +30,14 @@ export async function downloadBinaries(options: DownloadOptions): Promise<void> 
 
   validatePlatformArch(platform, arch, variant);
 
-  console.log(`📦 Downloading PostgreSQL + pgvector binaries for ${variant}-${platform}-${arch}`);
+  console.log(
+    `📦 Downloading PostgreSQL + pgvector + pg_trgm binaries for ${variant}-${platform}-${arch}`
+  );
 
   // Check if binaries already exist
   const binariesPath = join(targetDir, 'bin', 'postgres');
-  if (!force && existsSync(binariesPath)) {
+  if (!force && (existsSync(binariesPath) || existsSync(`${binariesPath}.exe`))) {
+    await verifyInstallation(targetDir);
     console.log('✅ Binaries already exist, skipping download. Use force: true to re-download.');
     return;
   }
@@ -48,7 +51,9 @@ export async function downloadBinaries(options: DownloadOptions): Promise<void> 
 
   try {
     await downloadAndExtract(downloadUrl, targetDir);
-    console.log('✅ PostgreSQL + pgvector binaries downloaded and extracted successfully');
+    console.log(
+      '✅ PostgreSQL + pgvector + pg_trgm binaries downloaded and extracted successfully'
+    );
 
     // Verify critical files exist
     await verifyInstallation(targetDir);
@@ -100,13 +105,16 @@ async function downloadAndExtract(url: string, targetDir: string): Promise<void>
  */
 async function verifyInstallation(targetDir: string): Promise<void> {
   // Critical PostgreSQL binaries
-  const criticalFiles = ['bin/postgres', 'bin/pg_ctl', 'bin/initdb', 'bin/psql'];
-
-  // Check for pgvector extension (our builds place it directly in lib/)
-  const vectorLibPaths = [
-    'lib/vector.so', // Linux
-    'lib/vector.dylib', // macOS
-    'lib/vector.dll', // Windows
+  const criticalFiles = [
+    'bin/postgres',
+    'bin/pg_ctl',
+    'bin/initdb',
+    'bin/psql',
+    'bin/pg_upgrade',
+    'bin/pg_controldata',
+    'bin/pg_dump',
+    'bin/pg_dumpall',
+    'bin/pg_restore',
   ];
 
   // Verify critical binaries exist (try both Unix and Windows paths)
@@ -132,21 +140,31 @@ async function verifyInstallation(targetDir: string): Promise<void> {
     }
   }
 
-  // Check for pgvector library (try multiple possible locations)
-  let vectorFound = false;
-  for (const vectorPath of vectorLibPaths) {
-    try {
-      await access(join(targetDir, vectorPath));
-      vectorFound = true;
-      console.log(`✅ Found pgvector at: ${vectorPath}`);
-      break;
-    } catch {
-      // Continue checking other paths
+  for (const extension of ['vector', 'pg_trgm']) {
+    const libraries = ['so', 'dylib', 'dll'].flatMap((suffix) => [
+      `lib/${extension}.${suffix}`,
+      `lib/postgresql/${extension}.${suffix}`,
+    ]);
+    if (!libraries.some((file) => existsSync(join(targetDir, file)))) {
+      throw new Error(`${extension} extension library missing`);
     }
-  }
-
-  if (!vectorFound) {
-    throw new Error(`pgvector extension not found. Checked: ${vectorLibPaths.join(', ')}`);
+    const shareDirs = ['share/extension', 'share/postgresql/extension'];
+    let found = false;
+    for (const dir of shareDirs) {
+      try {
+        const files = await readdir(join(targetDir, dir));
+        if (
+          files.includes(`${extension}.control`) &&
+          files.some((file) => file.startsWith(`${extension}--`) && file.endsWith('.sql'))
+        ) {
+          found = true;
+          break;
+        }
+      } catch {
+        // Try the other installation layout.
+      }
+    }
+    if (!found) throw new Error(`${extension} extension control or SQL files missing`);
   }
 }
 
@@ -154,18 +172,8 @@ async function verifyInstallation(targetDir: string): Promise<void> {
  * Get the current package version from package.json
  */
 async function getPackageVersion(): Promise<string> {
-  try {
-    // Try to read from package.json in the same directory as this module
-    const packageJsonPath = join(
-      dirname(new URL(import.meta.url).pathname),
-      '..',
-      '..',
-      'package.json'
-    );
-    const packageJson = await import(packageJsonPath, { with: { type: 'json' } });
-    return packageJson.default.version;
-  } catch {
-    // Fallback version if package.json can't be read (should match current package.json)
-    return '0.2.1';
-  }
+  const packageJson = JSON.parse(
+    await readFile(new URL('../package.json', import.meta.url), 'utf8')
+  );
+  return packageJson.version;
 }
