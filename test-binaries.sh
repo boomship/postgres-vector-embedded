@@ -11,7 +11,7 @@ VARIANT=${VARIANT:-lite}
 if [ "$ARCH" = "x86_64" ]; then ARCH="x64"; fi
 if [ "$ARCH" = "aarch64" ]; then ARCH="arm64"; fi
 
-POSTGRES_DIR="postgres-dist/postgres-${VARIANT}-${PLATFORM}-${ARCH}"
+POSTGRES_DIR=${TEST_BINARIES_DIR:-"postgres-dist/postgres-${VARIANT}-${PLATFORM}-${ARCH}"}
 TEST_DIR="/tmp/pg-test-$$"  # Use PID to avoid conflicts
 TEST_PORT=$((5433 + RANDOM % 1000))  # Random port to avoid conflicts
 

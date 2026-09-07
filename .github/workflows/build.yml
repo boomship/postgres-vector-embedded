@@ -76,7 +76,7 @@ jobs:
           # Build natively in the compatibility container below.
           echo "Using native ARM64 runner with Ubuntu 22.04 container"
         else
-          sudo apt-get install -y build-essential bison flex pkg-config zlib1g-dev libreadline-dev libssl-dev libicu-dev liblz4-dev libzstd-dev libxml2-dev llvm-dev uuid-dev clang
+          sudo apt-get install -y build-essential bison flex patchelf python3 pkg-config zlib1g-dev libreadline-dev libssl-dev libicu-dev liblz4-dev libzstd-dev libxml2-dev llvm-dev uuid-dev clang
         fi
 
     - name: Install dependencies (macOS)
@@ -139,7 +139,7 @@ jobs:
           -w /workspace \
           ubuntu:22.04 bash -c "
             apt-get update && 
-            apt-get install -y build-essential curl make bison flex zlib1g-dev libreadline-dev libssl-dev libicu-dev liblz4-dev libzstd-dev libxml2-dev llvm-dev uuid-dev clang pkg-config &&
+            apt-get install -y build-essential curl make bison flex patchelf python3 zlib1g-dev libreadline-dev libssl-dev libicu-dev liblz4-dev libzstd-dev libxml2-dev llvm-dev uuid-dev clang pkg-config &&
             export PLATFORM=${{ matrix.platform }} &&
             export ARCH=${{ matrix.arch }} &&
             export VARIANT=${{ matrix.variant }} &&
@@ -171,14 +171,15 @@ jobs:
           -w /workspace \
           ubuntu:22.04 bash -c "
             apt-get update &&
-            apt-get install -y libxml2 libssl3 libicu70 liblz4-1 libzstd1 libreadline8 libuuid1 zlib1g llvm-14-runtime clang-14 &&
+            apt-get install -y python3 libxml2 libssl3 libicu70 liblz4-1 libzstd1 libreadline8 libuuid1 zlib1g llvm-14-runtime clang-14 &&
             adduser --disabled-password --gecos '' testuser &&
             chown -R testuser:testuser /workspace &&
             su testuser -c '
               export PLATFORM=${{ matrix.platform }} &&
               export ARCH=${{ matrix.arch }} &&
               export VARIANT=${{ matrix.variant }} &&
-              ./test-binaries.sh
+              ./test-binaries.sh &&
+              ./scripts/test-relocated.sh
             '
           "
 
@@ -196,6 +197,14 @@ jobs:
       env:
         TEST_BINARIES_DIR: postgres-dist/postgres-${{ matrix.variant }}-${{ matrix.platform }}-${{ matrix.arch }}
       run: node --test tests/native.test.js
+
+    - name: Test relocated archive without library overrides
+      if: ${{ !(runner.os == 'Linux' && matrix.arch == 'arm64') }}
+      env:
+        PLATFORM: ${{ matrix.platform }}
+        ARCH: ${{ matrix.arch }}
+        VARIANT: ${{ matrix.variant }}
+      run: ./scripts/test-relocated.sh
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v7.0.1
