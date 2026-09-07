@@ -259,3 +259,23 @@ Run `npm test` for local package regression tests, and `make test` to build and
 exercise the native binaries, extensions and upgrade tools. Set `TEST_BINARIES_DIR` to a built bundle directory to include the live wrapper
 startup/restart integration test in `npm test`. Historical download
 diagnostics are available separately via `npm run test:legacy`.
+
+## Relocatable binary packaging (0.3.1)
+
+Version 0.3.0 archives passed tests inside the build directory but were not fully
+portable: macOS libraries retained absolute install names, Linux tools retained
+absolute RUNPATH entries, and Windows omitted a MinGW runtime DLL. Use 0.3.1
+archives once released; do not rely on a compiler installation or library-path
+overrides to make 0.3.0 work.
+
+macOS packaging now copies non-system dynamic dependencies recursively, rewrites
+references relative to the loading image, and signs every changed Mach-O file.
+Linux tools resolve bundled libpq through `$ORIGIN` paths; other Linux system
+libraries (including the full variant's LLVM, ICU, SSL and compression dependencies)
+remain host requirements. Windows packaging copies non-system DLL dependencies
+beside the executables.
+
+CI extracts each archive to a temporary directory, hides the build installation,
+and runs database/extension tests without library-path overrides. macOS also audits
+all library references and signatures; Linux verifies pg_upgrade resolves bundled
+libpq; Windows checks DLL completeness and removes compiler directories from PATH.
