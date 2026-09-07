@@ -28,7 +28,7 @@ jobs:
             platform: linux
             arch: x64
             variant: lite
-          - os: ubuntu-latest
+          - os: ubuntu-24.04-arm
             platform: linux
             arch: arm64
             variant: lite
@@ -49,7 +49,7 @@ jobs:
             platform: linux
             arch: x64
             variant: full
-          - os: ubuntu-latest
+          - os: ubuntu-24.04-arm
             platform: linux
             arch: arm64
             variant: full
@@ -68,19 +68,13 @@ jobs:
         node-version: '26'
 
 
-    - name: Set up QEMU for ARM64
-      if: matrix.arch == 'arm64' && runner.os == 'Linux'
-      uses: docker/setup-qemu-action@v4.3.0
-      with:
-        platforms: linux/arm64
-
     - name: Install dependencies (Ubuntu)
       if: runner.os == 'Linux'
       run: |
         sudo apt-get update
         if [ "${{ matrix.arch }}" = "arm64" ]; then
-          # For ARM64, we'll use QEMU emulation - Docker already available on runner
-          echo "Using QEMU emulation for ARM64 build"
+          # Build natively in the compatibility container below.
+          echo "Using native ARM64 runner with Ubuntu 22.04 container"
         else
           sudo apt-get install -y build-essential bison flex pkg-config zlib1g-dev libreadline-dev libssl-dev libicu-dev liblz4-dev libzstd-dev libxml2-dev llvm-dev uuid-dev clang
         fi
@@ -137,7 +131,7 @@ jobs:
         export VARIANT=${{ matrix.variant }}
         make build
 
-    - name: Build PostgreSQL + pgvector + pg_trgm (ARM64 with QEMU)
+    - name: Build PostgreSQL + pgvector + pg_trgm (native ARM64 container)
       if: runner.os == 'Linux' && matrix.arch == 'arm64'
       run: |
         docker run --rm --platform linux/arm64 \
@@ -169,7 +163,7 @@ jobs:
         export VARIANT=${{ matrix.variant }}
         ./test-binaries.sh
 
-    - name: Test binaries functionality (ARM64 with QEMU)
+    - name: Test binaries functionality (native ARM64 container)
       if: runner.os == 'Linux' && matrix.arch == 'arm64'
       run: |
         docker run --rm --platform linux/arm64 \
