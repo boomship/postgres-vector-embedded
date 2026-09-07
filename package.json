@@ -1,7 +1,7 @@
 {
   "name": "@boomship/postgres-vector-embedded",
-  "version": "0.2.2",
-  "description": "Embedded PostgreSQL with pgvector extension for Node.js applications",
+  "version": "0.3.0",
+  "description": "Embedded PostgreSQL with pgvector and pg_trgm extensions for Node.js applications",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
@@ -11,8 +11,9 @@
     "lint": "biome lint src",
     "format": "biome format --write src",
     "check": "biome check --write src",
-    "test": "node dist/test/basic.test.js",
-    "prepublishOnly": "npm run build"
+    "test": "npm run build && node --test tests/*.test.js",
+    "prepublishOnly": "npm run build",
+    "test:legacy": "node tests/run-all.js"
   },
   "keywords": [
     "postgresql",
@@ -21,7 +22,8 @@
     "vector",
     "database",
     "node.js",
-    "similarity-search"
+    "similarity-search",
+    "pg_trgm"
   ],
   "author": "boomship",
   "license": "MIT",
@@ -53,14 +55,13 @@
     "LICENSE"
   ],
   "dependencies": {
-    "pg": "^8.16.2",
-    "tar": "^7.4.3"
+    "pg": "^8.23.0",
+    "tar": "^7.5.22"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.0.4",
-    "@types/node": "^22.0.0",
-    "@types/pg": "^8.15.4",
-    "@types/tar": "^6.1.13",
-    "typescript": "^5.8.3"
+    "@biomejs/biome": "^2.5.12",
+    "@types/node": "^26.4.1",
+    "@types/pg": "^8.23.1",
+    "typescript": "^7.0.2"
   }
 }

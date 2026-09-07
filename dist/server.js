@@ -1,7 +1,8 @@
-import { spawn } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { promisify } from 'node:util';
 /**
  * Simple PostgreSQL server wrapper for embedded use
  *
@@ -17,7 +18,6 @@ export class PostgresServer {
     password;
     config;
     process = null;
-    isInitialized = false;
     constructor(options) {
         this.binariesDir = options.binariesDir;
         this.dataDir = options.dataDir;
@@ -31,8 +31,13 @@ export class PostgresServer {
      * Initialize the PostgreSQL data directory (only needed once)
      */
     async initialize() {
-        if (this.isInitialized || existsSync(join(this.dataDir, 'PG_VERSION'))) {
-            this.isInitialized = true;
+        if (existsSync(join(this.dataDir, 'PG_VERSION'))) {
+            const dataVersion = (await readFile(join(this.dataDir, 'PG_VERSION'), 'utf8')).trim();
+            const { stdout } = await promisify(execFile)(join(this.binariesDir, 'bin', 'postgres'), ['--version'], { env: { ...globalThis.process.env, DYLD_LIBRARY_PATH: join(this.binariesDir, 'lib') } });
+            const binaryVersion = stdout.match(/PostgreSQL\) (\d+)/)?.[1];
+            if (!binaryVersion || dataVersion !== binaryVersion) {
+                throw new Error(`PostgreSQL data directory version ${dataVersion} is incompatible with binary version ${binaryVersion ?? 'unknown'}. Migrate with pg_upgrade or dump/restore before starting.`);
+            }
             return;
         }
         console.log(`🔧 Initializing PostgreSQL data directory: ${this.dataDir}`);
@@ -54,7 +59,6 @@ export class PostgresServer {
             initdb.on('close', (code) => {
                 if (code === 0) {
                     console.log('✅ PostgreSQL data directory initialized');
-                    this.isInitialized = true;
                     resolve();
                 }
                 else {
@@ -93,8 +97,8 @@ export class PostgresServer {
         await new Promise((resolve) => setTimeout(resolve, 2000));
         // Verify server is responsive
         await this.waitForReady();
-        // Install pgvector extension
-        await this.installPgVector();
+        // Install bundled extensions
+        await this.installExtensions();
         console.log('✅ PostgreSQL server started successfully');
     }
     /**
@@ -185,10 +189,10 @@ export class PostgresServer {
         throw new Error('PostgreSQL server failed to become ready within timeout');
     }
     /**
-     * Install the pgvector extension
+     * Install the bundled extensions
      */
-    async installPgVector() {
-        console.log('🔌 Installing pgvector extension');
+    async installExtensions() {
+        console.log('🔌 Installing pgvector and pg_trgm extensions');
         const psqlPath = join(this.binariesDir, 'bin', 'psql');
         await new Promise((resolve, reject) => {
             const psql = spawn(psqlPath, [
@@ -201,7 +205,7 @@ export class PostgresServer {
                 '-d',
                 'postgres',
                 '-c',
-                'CREATE EXTENSION IF NOT EXISTS vector;',
+                'CREATE EXTENSION IF NOT EXISTS vector; CREATE EXTENSION IF NOT EXISTS pg_trgm;',
             ], {
                 stdio: 'inherit',
                 env: {
@@ -212,11 +216,11 @@ export class PostgresServer {
             });
             psql.on('close', (code) => {
                 if (code === 0) {
-                    console.log('✅ pgvector extension installed');
+                    console.log('✅ pgvector and pg_trgm extensions installed');
                     resolve();
                 }
                 else {
-                    reject(new Error(`Failed to install pgvector extension, exit code ${code}`));
+                    reject(new Error(`Failed to install pgvector and pg_trgm extensions, exit code ${code}`));
                 }
             });
             psql.on('error', reject);
